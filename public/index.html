@@ -126,6 +126,8 @@ tr:hover td{background:rgba(255,255,255,0.012)}
   <div class="nav-section">clarity + ia</div>
   <div class="nav-item" onclick="switchTab('heatmap',this)"><span>◉</span><span>Mapa de Calor</span></div>
   <div class="nav-item" onclick="switchTab('pdp',this)"><span>◎</span><span>Auditoría PDP</span></div>
+  <div class="nav-item" onclick="switchTab('mobile',this)"><span>◐</span><span>Mobile Diagnostic</span></div>
+  <div class="nav-item" onclick="switchTab('competitors',this)"><span>⊕</span><span>Competidores</span></div>
   <div class="sidebar-footer"><p>VTEX API<br>Microsoft Clarity<br>Claude AI<br>© Ricky 2025</p></div>
 </nav>
 
@@ -208,6 +210,7 @@ tr:hover td{background:rgba(255,255,255,0.012)}
       <input type="text" id="hmPage" value="/" style="width:110px">
       <button class="btn primary" id="hmBtn" onclick="runHeatmap()">▶ cargar mapa</button>
       <button class="btn" id="hmAnalyzeBtn" onclick="runRecordingsAnalysis()" style="display:none">✦ analizar grabaciones</button>
+      <button class="btn" id="hmDecodeBtn" onclick="runHeatmapDecode()" style="display:none">⬡ decodificar heatmap</button>
     </div>
   </div>
   <div class="content">
@@ -294,6 +297,109 @@ tr:hover td{background:rgba(255,255,255,0.012)}
 
     <div class="log-bar"><span class="pulse idle" id="pdpDot"></span><span id="pdpLog">presioná "cargar productos" para elegir qué auditar</span></div>
     <div id="pdpResult"></div>
+  </div>
+</div>
+
+
+<!-- MOBILE DIAGNOSTIC TAB -->
+<div id="tab-mobile" class="tab-content">
+  <div class="topbar">
+    <div><div class="topbar-title">Mobile Friction Diagnostic</div><div class="topbar-sub">15-point framework · tap targets · checkout · trust signals · revenue impact</div></div>
+  </div>
+  <div class="content">
+    <div class="audit-form">
+      <div class="panel-title">página a diagnosticar</div>
+      <div class="form-grid">
+        <div class="form-field form-field-full">
+          <label>URL de la página</label>
+          <input type="url" id="mobileUrl" placeholder="https://sarkanyar.com.ar/zapatilla-ejemplo/p">
+        </div>
+        <div class="form-field">
+          <label>tipo de página</label>
+          <select id="mobilePageType">
+            <option value="homepage">Homepage</option>
+            <option value="product page" selected>Página de producto</option>
+            <option value="checkout">Checkout</option>
+            <option value="category page">Categoría</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>CVR mobile actual (opcional)</label>
+          <input type="text" id="mobileCVR" placeholder="ej: 1.2%">
+        </div>
+        <div class="form-field">
+          <label>CVR desktop (opcional)</label>
+          <input type="text" id="desktopCVR" placeholder="ej: 3.1%">
+        </div>
+        <div class="form-field">
+          <label>% tráfico mobile (opcional)</label>
+          <input type="text" id="mobileTraffic" placeholder="ej: 68">
+        </div>
+        <div class="form-field">
+          <label>quejas conocidas de usuarios (opcional)</label>
+          <input type="text" id="mobileComplaints" placeholder="ej: botón difícil de tocar, checkout lento">
+        </div>
+      </div>
+      <div style="margin-top:1rem;display:flex;gap:0.5rem;align-items:center">
+        <button class="btn primary" id="mobileBtn" onclick="runMobileDiagnostic()">✦ diagnosticar mobile</button>
+        <span style="font-size:0.63rem;color:var(--muted);font-family:'IBM Plex Mono',monospace">15 puntos · tap targets · checkout · trust signals · roadmap de implementación</span>
+      </div>
+    </div>
+    <div class="log-bar"><span class="pulse idle" id="mobileDot"></span><span id="mobileLog">ingresá la URL y presioná diagnosticar</span></div>
+    <div id="mobileResult"></div>
+  </div>
+</div>
+
+<!-- COMPETITORS TAB -->
+<div id="tab-competitors" class="tab-content">
+  <div class="topbar">
+    <div><div class="topbar-title">Análisis de Competidores</div><div class="topbar-sub">CRO teardown · positioning · conversion tactics · gaps y oportunidades</div></div>
+    <div class="topbar-actions">
+      <button class="btn" onclick="showAddCompetitor()">+ agregar competidor</button>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- ADD COMPETITOR FORM -->
+    <div id="addCompetitorForm" style="display:none;margin-bottom:1.25rem">
+      <div class="audit-form">
+        <div class="panel-title">agregar competidor</div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>nombre del competidor</label>
+            <input type="text" id="compName" placeholder="ej: Nike, Adidas, MercadoLibre">
+          </div>
+          <div class="form-field">
+            <label>URL del sitio</label>
+            <input type="url" id="compUrl" placeholder="https://www.competidor.com">
+          </div>
+          <div class="form-field">
+            <label>categoría / industria</label>
+            <input type="text" id="compCategory" placeholder="ej: zapatillas deportivas, moda urbana">
+          </div>
+          <div class="form-field">
+            <label>página a analizar</label>
+            <select id="compPage">
+              <option value="full site">Sitio completo</option>
+              <option value="homepage">Homepage</option>
+              <option value="product page">Página de producto</option>
+              <option value="checkout">Checkout</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:0.5rem">
+          <button class="btn primary" onclick="saveCompetitor()">guardar competidor</button>
+          <button class="btn" onclick="document.getElementById('addCompetitorForm').style.display='none'">cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPETITORS LIST -->
+    <div id="competitorsList" style="margin-bottom:1.25rem"></div>
+
+    <!-- ANALYSIS RESULT -->
+    <div class="log-bar"><span class="pulse idle" id="compDot"></span><span id="compLog">agregá competidores y presioná analizar en cualquiera de ellos</span></div>
+    <div id="compResult"></div>
   </div>
 </div>
 
@@ -535,6 +641,116 @@ async function runPDPAudit(){
 }
 
 function fmtAI(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/^#{1,3} (.+)$/gm,'<h3>$1</h3>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/^---+$/gm,'<hr>').replace(/\n/g,'<br>')}
+
+// ── HEATMAP DECODER ───────────────────────────────────────────────────────────
+async function runHeatmapDecode(){
+  const btn=document.getElementById('hmDecodeBtn');btn.disabled=true;
+  log('hmDot','hmLog','decodificando patrones del heatmap con IA...');
+  const dateRange=document.getElementById('hmRange').value,page=document.getElementById('hmPage').value||'/';
+  const result=document.getElementById('recResult');shimmer(result,8);
+  document.getElementById('recWrap').style.display='block';
+  try{
+    const hmData=await post('/api/heatmap',{dateRange,page});
+    if(hmData.error)throw new Error(hmData.error);
+    const data=await post('/api/heatmap-decode',{heatmapData:hmData,pageType:'product page',pageGoal:'add to cart',period:dateRange});
+    if(data.error)throw new Error(data.error);
+    result.innerHTML=`<div class="ai-result"><div class="ai-content">${fmtAI(data.analysis)}</div></div>`;
+    log('hmDot','hmLog','decodificación completada · Clarity + Claude',false);
+    log('recDot','recLog','análisis de patrones completado',false);
+  }catch(e){result.innerHTML=`<div class="log-bar"><span class="pulse idle"></span>error: ${e.message}</div>`;log('hmDot','hmLog','error',false)}
+  btn.disabled=false;
+}
+
+// ── MOBILE DIAGNOSTIC ─────────────────────────────────────────────────────────
+async function runMobileDiagnostic(){
+  const url=document.getElementById('mobileUrl').value.trim();
+  if(!url){log('mobileDot','mobileLog','⚠ ingresá la URL de la página',false);return}
+  const btn=document.getElementById('mobileBtn');btn.disabled=true;
+  log('mobileDot','mobileLog','diagnosticando experiencia mobile con IA · 20-30 segundos...');
+  const result=document.getElementById('mobileResult');shimmer(result,10);
+  try{
+    const data=await post('/api/mobile-diagnostic',{
+      url, pageType:document.getElementById('mobilePageType').value,
+      mobileCVR:document.getElementById('mobileCVR').value,
+      desktopCVR:document.getElementById('desktopCVR').value,
+      mobileTraffic:document.getElementById('mobileTraffic').value,
+      complaints:document.getElementById('mobileComplaints').value
+    });
+    if(data.error)throw new Error(data.error);
+    result.innerHTML=`<div class="ai-result"><div class="ai-content">${fmtAI(data.analysis)}</div></div>`;
+    log('mobileDot','mobileLog','diagnóstico completado · 15-point framework',false);
+  }catch(e){result.innerHTML=`<div class="log-bar"><span class="pulse idle"></span>error: ${e.message}</div>`;log('mobileDot','mobileLog','error',false)}
+  btn.disabled=false;
+}
+
+// ── COMPETITORS ───────────────────────────────────────────────────────────────
+let competitors=JSON.parse(localStorage.getItem('ricky_competitors')||'[]');
+
+function showAddCompetitor(){
+  document.getElementById('addCompetitorForm').style.display='block';
+  document.getElementById('compName').focus();
+}
+
+function saveCompetitor(){
+  const name=document.getElementById('compName').value.trim();
+  const url=document.getElementById('compUrl').value.trim();
+  if(!name&&!url){return}
+  competitors.push({id:Date.now(),name,url,category:document.getElementById('compCategory').value,page:document.getElementById('compPage').value,addedAt:new Date().toLocaleDateString('es-AR')});
+  localStorage.setItem('ricky_competitors',JSON.stringify(competitors));
+  document.getElementById('addCompetitorForm').style.display='none';
+  ['compName','compUrl','compCategory'].forEach(id=>document.getElementById(id).value='');
+  renderCompetitorsList();
+  log('compDot','compLog',`"${name||url}" agregado · presioná analizar para el teardown`,false);
+}
+
+function deleteCompetitor(id){
+  competitors=competitors.filter(c=>c.id!==id);
+  localStorage.setItem('ricky_competitors',JSON.stringify(competitors));
+  renderCompetitorsList();
+}
+
+function renderCompetitorsList(){
+  const el=document.getElementById('competitorsList');
+  if(!competitors.length){
+    el.innerHTML=`<div class="panel" style="text-align:center;padding:2rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.75rem">ningún competidor guardado aún · presioná "+ agregar competidor"</div>`;
+    return;
+  }
+  el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0.75rem">${
+    competitors.map(c=>`<div class="panel" style="display:flex;flex-direction:column;gap:0.6rem">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem">
+        <div>
+          <div style="font-weight:500;font-size:0.85rem">${c.name||c.url}</div>
+          <div class="mono-sm" style="margin-top:2px">${c.category||'—'} · ${c.page}</div>
+        </div>
+        <button class="btn" style="font-size:0.6rem;padding:0.2rem 0.5rem;flex-shrink:0" onclick="deleteCompetitor(${c.id})">✕</button>
+      </div>
+      ${c.url?`<div class="mono-sm" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.url}</div>`:''}
+      <div style="display:flex;gap:0.5rem;align-items:center;justify-content:space-between">
+        <span class="mono-sm">agregado ${c.addedAt}</span>
+        <button class="btn primary" style="font-size:0.68rem;padding:0.3rem 0.7rem" onclick="runTeardown(${c.id})">✦ analizar</button>
+      </div>
+    </div>`).join('')
+  }</div>`;
+}
+
+async function runTeardown(id){
+  const comp=competitors.find(c=>c.id===id);
+  if(!comp)return;
+  document.querySelectorAll('#competitorsList .btn.primary').forEach(b=>b.disabled=true);
+  log('compDot','compLog',`analizando "${comp.name||comp.url}" · 20-30 segundos...`);
+  const result=document.getElementById('compResult');shimmer(result,10);
+  result.scrollIntoView({behavior:'smooth',block:'start'});
+  try{
+    const data=await post('/api/competitor-teardown',{competitorUrl:comp.url,competitorName:comp.name,category:comp.category,pageToAnalyze:comp.page});
+    if(data.error)throw new Error(data.error);
+    result.innerHTML=`<div class="ai-result"><div style="font-size:0.7rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:0.75rem">análisis de: ${comp.name||comp.url} · ${new Date().toLocaleDateString('es-AR')}</div><div class="ai-content">${fmtAI(data.analysis)}</div></div>`;
+    log('compDot','compLog',`teardown de "${comp.name||comp.url}" completado`,false);
+  }catch(e){result.innerHTML=`<div class="log-bar"><span class="pulse idle"></span>error: ${e.message}</div>`;log('compDot','compLog','error',false)}
+  document.querySelectorAll('#competitorsList .btn.primary').forEach(b=>b.disabled=false);
+}
+
+// Init competitors list on load
+renderCompetitorsList();
 </script>
 </body>
 </html>
