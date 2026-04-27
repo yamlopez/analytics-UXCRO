@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: analytics-uxcro
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/status
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: VTEX_ACCOUNT
+        sync: false
+      - key: VTEX_APP_KEY
+        sync: false
+      - key: VTEX_APP_TOKEN
+        sync: false
+      - key: CLARITY_PROJECT_ID
+        sync: false
+      - key: CLARITY_API_KEY
+        sync: false
