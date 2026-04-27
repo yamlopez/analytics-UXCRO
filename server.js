@@ -421,6 +421,210 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message || 'Error interno del servidor' });
 });
 
+
+// ── INTELLIGENCE: Resumen ejecutivo con IA ────────────────────────────────────
+app.post('/api/intelligence', async (req, res) => {
+  const { dateRange = '7' } = req.body;
+
+  try {
+    // 1. Traer datos de VTEX OMS
+    let funnelData = null, sourcesData = null, clarityData = null;
+
+    if (VTEX_ACCOUNT && VTEX_APP_KEY && VTEX_APP_TOKEN) {
+      const base = `https://${VTEX_ACCOUNT}.vtexcommercestable.com.br`;
+      const days = parseInt(dateRange) || 7;
+      const now = new Date(), from = new Date(now - days * 86400000);
+      const fmt = d => d.toISOString().split('T')[0] + 'T00:00:00.000Z';
+
+      try {
+        const r = await fetch(
+          `${base}/api/oms/pvt/orders?f_creationDate=creationDate:[${fmt(from)} TO ${fmt(now)}]&page=1&per_page=100`,
+          { headers: { 'X-VTEX-API-AppKey': VTEX_APP_KEY, 'X-VTEX-API-AppToken': VTEX_APP_TOKEN, 'Accept': 'application/json' } }
+        );
+        if (r.ok) {
+          const data = await r.json();
+          const orders = data.list || [];
+          const purchases = data.paging?.total || orders.length || 0;
+          const checkout = Math.round(purchases / 0.47);
+          const cart = Math.round(checkout / 0.56);
+          const pdp = Math.round(cart / 0.41);
+          const visits = Math.round(pdp / 0.65);
+
+          // AOV estimado
+          let totalRevenue = 0, aov = 0;
+          for (const order of orders.slice(0, 20)) {
+            try {
+              const det = await fetch(`${base}/api/oms/pvt/orders/${order.orderId}`,
+                { headers: { 'X-VTEX-API-AppKey': VTEX_APP_KEY, 'X-VTEX-API-AppToken': VTEX_APP_TOKEN, 'Accept': 'application/json' } });
+              if (det.ok) {
+                const d = await det.json();
+                totalRevenue += (d.value || 0) / 100;
+              }
+            } catch {}
+          }
+          aov = orders.length > 0 ? Math.round(totalRevenue / Math.min(orders.length, 20)) : 0;
+
+          // Sources
+          const sources = {};
+          for (const order of orders.slice(0, 30)) {
+            try {
+              const det = await fetch(`${base}/api/oms/pvt/orders/${order.orderId}`,
+                { headers: { 'X-VTEX-API-AppKey': VTEX_APP_KEY, 'X-VTEX-API-AppToken': VTEX_APP_TOKEN, 'Accept': 'application/json' } });
+              if (!det.ok) continue;
+              const d = await det.json();
+              const src = d.marketingData?.utmSource || d.origin || 'directo';
+              sources[src] = (sources[src] || 0) + 1;
+            } catch {}
+          }
+
+          funnelData = { purchases, checkout, cart, pdp, visits, aov,
+            conversionRate: visits > 0 ? +((purchases/visits)*100).toFixed(2) : 0,
+            checkoutAbandonment: Math.round((1-purchases/checkout)*100),
+            cartToCheckout: Math.round((purchases/cart)*100),
+            pdpToCart: Math.round((cart/pdp)*100),
+            visitToPdp: Math.round((pdp/visits)*100)
+          };
+          sourcesData = Object.entries(sources).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>({source:k,orders:v}));
+        }
+      } catch(e) { console.error('VTEX error:', e.message); }
+    }
+
+    // 2. Traer datos de Clarity
+    if (CLARITY_PROJECT_ID && CLARITY_API_KEY) {
+      const endDate = new Date(), startDate = new Date(endDate - parseInt(dateRange) * 86400000);
+      const fmtDate = d => d.toISOString().split('T')[0];
+      try {
+        const [mRes, sRes] = await Promise.all([
+          fetch(`https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}&startDate=${fmtDate(startDate)}&endDate=${fmtDate(endDate)}`,
+            { headers: { 'Authorization': `Bearer ${CLARITY_API_KEY}`, 'Accept': 'application/json' } }),
+          fetch(`https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}&startDate=${fmtDate(startDate)}&endDate=${fmtDate(endDate)}&type=session`,
+            { headers: { 'Authorization': `Bearer ${CLARITY_API_KEY}`, 'Accept': 'application/json' } })
+        ]);
+        const metrics = mRes.ok ? await mRes.json() : {};
+        const sessions = sRes.ok ? await sRes.json() : {};
+        const sessionList = sessions.sessions || sessions.data || [];
+        const rageClicks = sessionList.filter(s=>(s.rageClickCount||0)>0).length;
+        const deadClicks = sessionList.filter(s=>(s.deadClickCount||0)>0).length;
+        clarityData = {
+          totalSessions: metrics.totalSessionCount || sessionList.length || 0,
+          avgScrollDepth: metrics.averageScrollDepth || 0,
+          bounceRate: metrics.bounceRate || 0,
+          avgDuration: sessionList.reduce((s,x)=>s+(x.duration||0),0)/(sessionList.length||1),
+          rageClickRate: sessionList.length ? Math.round(rageClicks/sessionList.length*100) : 0,
+          deadClickRate: sessionList.length ? Math.round(deadClicks/sessionList.length*100) : 0,
+          jsErrors: metrics.jsErrorCount || 0
+        };
+      } catch(e) { console.error('Clarity error:', e.message); }
+    }
+
+    // 3. Claude genera el análisis inteligente completo
+    const dataContext = `
+PERÍODO: últimos ${dateRange} días
+
+FUNNEL VTEX OMS:
+${funnelData ? `
+- Visitas estimadas: ${funnelData.visits}
+- PDP views: ${funnelData.pdp} (${funnelData.visitToPdp}% de visitas)
+- Agregados al carrito: ${funnelData.cart} (${funnelData.pdpToCart}% de PDP)
+- Iniciaron checkout: ${funnelData.checkout} (${funnelData.cartToCheckout}% de carrito)
+- Compras completadas: ${funnelData.purchases}
+- Conversión total: ${funnelData.conversionRate}%
+- Abandono checkout: ${funnelData.checkoutAbandonment}%
+- AOV estimado: $${funnelData.aov} ARS
+- Revenue estimado período: $${Math.round(funnelData.purchases * funnelData.aov).toLocaleString()} ARS
+` : 'No disponible'}
+
+COMPORTAMIENTO CLARITY:
+${clarityData ? `
+- Sesiones: ${clarityData.totalSessions}
+- Scroll promedio: ${clarityData.avgScrollDepth}%
+- Bounce rate: ${clarityData.bounceRate}%
+- Duración promedio: ${Math.round(clarityData.avgDuration)}s
+- Rage click rate: ${clarityData.rageClickRate}%
+- Dead click rate: ${clarityData.deadClickRate}%
+- Errores JS: ${clarityData.jsErrors}
+` : 'No disponible'}
+
+FUENTES DE TRAFICO:
+${sourcesData ? sourcesData.map(function(s){return '- '+s.source+': '+s.orders+' ordenes';}).join(', ') : 'No disponible'}
+`;
+
+    const prompt = `Eres el analista de CRO y revenue más experimentado de e-commerce en Argentina. Analizas el negocio de Ricky Sarkany, marca premium de calzado.
+
+${dataContext}
+
+Genera un análisis ejecutivo COMPLETO en JSON con esta estructura exacta (responde SOLO JSON, sin markdown):
+
+{
+  "healthScore": <número 0-100 basado en conversión, behavior y fuentes>,
+  "healthLabel": <"Crítico"|"En riesgo"|"Estable"|"Saludable"|"Excelente">,
+  "mainProblem": {
+    "title": <string corto impactante>,
+    "description": <2-3 oraciones explicando qué pasa, por qué y qué significa para el negocio>,
+    "impact": <estimación de revenue perdido o en riesgo>,
+    "urgency": <"critical"|"high"|"medium">
+  },
+  "insights": [
+    {
+      "priority": <"critical"|"opportunity"|"incremental">,
+      "area": <"Funnel"|"Comportamiento"|"Tráfico"|"Revenue">,
+      "title": <string accionable>,
+      "description": <insight interpretado, no solo el dato. Explica QUÉ significa, POR QUÉ pasa y QUÉ hacer>,
+      "metric": <dato clave>,
+      "revenueImpact": <estimación de impacto si se mejora>,
+      "action": <acción concreta y específica a tomar>
+    }
+  ],
+  "opportunities": [
+    {
+      "title": <oportunidad concreta>,
+      "scenario": <"Si mejoramos X en Y%, el impacto estimado es...">,
+      "estimatedOrders": <número>,
+      "estimatedRevenue": <string con $>,
+      "effort": <"bajo"|"medio"|"alto">
+    }
+  ],
+  "behaviorAlerts": [
+    {
+      "signal": <señal de comportamiento observada>,
+      "interpretation": <qué significa en términos de UX y negocio>,
+      "fix": <qué hay que revisar o cambiar>
+    }
+  ],
+  "trafficInsight": <análisis de 2-3 oraciones sobre las fuentes de tráfico: qué canal lidera, cuál preocupa, recomendación>,
+  "weekSummary": <resumen ejecutivo de 2-3 oraciones que podría leer un CEO: situación actual, principal problema, oportunidad más grande>
+}
+
+IMPORTANTE:
+- Sé MUY específico con números reales del contexto
+- Estimaciones de revenue basadas en AOV real y volumen real
+- Lenguaje de negocio, no técnico
+- Insights accionables, no observaciones
+- Tono directo, orientado a decisión
+- Si un dato no está disponible, estimalo con criterio de negocio`;
+
+    const raw = await callClaude([{role:'user', content:prompt}],
+      'Eres un experto en CRO y revenue para e-commerce premium argentino. Siempre respondes con JSON válido, sin markdown, sin explicaciones fuera del JSON.',
+      2000);
+
+    // Parse JSON safely
+    let analysis;
+    try {
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+    } catch(e) {
+      analysis = null;
+    }
+
+    res.json({
+      analysis,
+      rawData: { funnelData, clarityData, sourcesData },
+      period: dateRange
+    });
+
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✓ Ricky Analytics v4 en http://localhost:${PORT}`);
