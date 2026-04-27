@@ -27,15 +27,30 @@ function clarityHeaders() {
   return { 'Authorization': `Bearer ${CLARITY_API_KEY}`, 'Accept': 'application/json' };
 }
 async function callClaude(messages, system, max_tokens = 2500) {
-  if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY no configurada');
-  const res = await fetch(ANTHROPIC_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: MODEL, max_tokens, system, messages })
-  });
-  if (!res.ok) throw new Error(`Claude error ${res.status}: ${await res.text()}`);
-  const data = await res.json();
-  return data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+  if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY no configurada en Render → Environment');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 55000); // 55s timeout
+  try {
+    const res = await fetch(ANTHROPIC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: MODEL, max_tokens, system, messages }),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (!res.ok) {
+      const errText = await res.text();
+      let errMsg = `Claude API error ${res.status}`;
+      try { const j = JSON.parse(errText); errMsg = j.error?.message || errMsg; } catch{}
+      throw new Error(errMsg);
+    }
+    const data = await res.json();
+    return data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+  } catch(e) {
+    clearTimeout(timeout);
+    if (e.name === 'AbortError') throw new Error('Timeout: el análisis tardó demasiado. Intentá de nuevo.');
+    throw e;
+  }
 }
 
 // ── Health check ──────────────────────────────────────────────────────────────
@@ -69,33 +84,155 @@ app.post('/api/seo', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── FUNNEL: VTEX OMS ──────────────────────────────────────────────────────────
+// ── FUNNEL: VTEX OMS + comparación + fuentes ─────────────────────────────────
+async function fetchFunnelData(fromDate, toDate) {
+  const base = `https://${VTEX_ACCOUNT}.vtexcommercestable.com.br`;
+  const fmt = d => d.toISOString().split('T')[0] + 'T00:00:00.000Z';
+
+  // Órdenes del período
+  const r = await fetch(
+    `${base}/api/oms/pvt/orders?f_creationDate=creationDate:[${fmt(fromDate)} TO ${fmt(toDate)}]&page=1&per_page=100`,
+    { headers: vtexHeaders() }
+  );
+  if (!r.ok) throw new Error(`VTEX OMS ${r.status}`);
+  const data = await r.json();
+  const orders = data.list || [];
+  const purchases = data.paging?.total || orders.length || 0;
+
+  // UTM sources desde órdenes (muestra de las primeras 30)
+  const sources = {};
+  for (const order of orders.slice(0, 30)) {
+    try {
+      const det = await fetch(`${base}/api/oms/pvt/orders/${order.orderId}`, { headers: vtexHeaders() });
+      if (!det.ok) continue;
+      const d = await det.json();
+      const utm = d.marketingData?.utmSource || d.marketingData?.utmCampaign || d.origin || 'directo';
+      sources[utm] = (sources[utm] || 0) + 1;
+    } catch { continue; }
+  }
+
+  // Funnel estimado
+  const checkout = Math.round(purchases / 0.47);
+  const cart     = Math.round(checkout  / 0.56);
+  const pdp      = Math.round(cart      / 0.41);
+  const visits   = Math.round(pdp       / 0.65);
+
+  return {
+    purchases, checkout, cart, pdp, visits,
+    conversionRate: visits > 0 ? +((purchases/visits)*100).toFixed(2) : 0,
+    sources: Object.entries(sources).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,v])=>({source:k,orders:v}))
+  };
+}
+
 app.post('/api/funnel', async (req, res) => {
   if (!VTEX_ACCOUNT || !VTEX_APP_KEY || !VTEX_APP_TOKEN)
     return res.status(400).json({ error: 'Credenciales VTEX no configuradas en variables de entorno' });
-  const { dateRange = '7' } = req.body;
-  const base = `https://${VTEX_ACCOUNT}.vtexcommercestable.com.br`;
+
+  const { dateRange = '7', compareMode = 'none', customFrom, customTo, compareFrom, compareTo } = req.body;
   const days = parseInt(dateRange) || 7;
-  const now = new Date(), from = new Date(now - days * 86400000);
-  const fmt = d => d.toISOString().split('T')[0] + 'T00:00:00.000Z';
+
   try {
-    const r = await fetch(`${base}/api/oms/pvt/orders?f_creationDate=creationDate:[${fmt(from)} TO ${fmt(now)}]&page=1&per_page=100`, { headers: vtexHeaders() });
-    if (!r.ok) throw new Error(`VTEX OMS ${r.status}`);
-    const data = await r.json();
-    const purchases = data.paging?.total || data.list?.length || 0;
-    const checkout = Math.round(purchases / 0.47), cart = Math.round(checkout / 0.56);
-    const pdp = Math.round(cart / 0.41), visits = Math.round(pdp / 0.65);
+    // Período principal
+    let mainFrom, mainTo;
+    if (customFrom && customTo) {
+      mainFrom = new Date(customFrom);
+      mainTo   = new Date(customTo);
+      mainTo.setHours(23,59,59);
+    } else {
+      mainTo   = new Date();
+      mainFrom = new Date(mainTo - days * 86400000);
+    }
+
+    const main = await fetchFunnelData(mainFrom, mainTo);
+
+    // Período de comparación
+    let compare = null;
+    if (compareMode !== 'none') {
+      let cFrom, cTo;
+      if (compareMode === 'custom' && compareFrom && compareTo) {
+        cFrom = new Date(compareFrom);
+        cTo   = new Date(compareTo);
+        cTo.setHours(23,59,59);
+      } else if (compareMode === 'prev_period') {
+        const diff = mainTo - mainFrom;
+        cTo   = new Date(mainFrom - 1);
+        cFrom = new Date(cTo - diff);
+      } else if (compareMode === 'prev_year') {
+        cFrom = new Date(mainFrom); cFrom.setFullYear(cFrom.getFullYear()-1);
+        cTo   = new Date(mainTo);   cTo.setFullYear(cTo.getFullYear()-1);
+      }
+      compare = await fetchFunnelData(cFrom, cTo);
+      compare.from = cFrom.toISOString().split('T')[0];
+      compare.to   = cTo.toISOString().split('T')[0];
+    }
+
+    // Delta helpers
+    const delta = (a,b) => b > 0 ? +(((a-b)/b)*100).toFixed(1) : null;
+
+    const buildFunnel = (d, cmp) => [
+      { step:'Visita',   users:d.visits,    dropoff:0,                                            delta: cmp ? delta(d.visits,cmp.visits) : null },
+      { step:'PDP',      users:d.pdp,       dropoff:Math.round((1-d.pdp/d.visits)*100),           delta: cmp ? delta(d.pdp,cmp.pdp) : null },
+      { step:'Carrito',  users:d.cart,      dropoff:Math.round((1-d.cart/d.pdp)*100),             delta: cmp ? delta(d.cart,cmp.cart) : null },
+      { step:'Checkout', users:d.checkout,  dropoff:Math.round((1-d.checkout/d.cart)*100),        delta: cmp ? delta(d.checkout,cmp.checkout) : null },
+      { step:'Compra',   users:d.purchases, dropoff:Math.round((1-d.purchases/d.checkout)*100),  delta: cmp ? delta(d.purchases,cmp.purchases) : null }
+    ];
+
+    // IA insights si hay comparación
+    let insights = null;
+    if (compare) {
+      const prompt = `Analyze this e-commerce funnel comparison and provide insights in Spanish.
+
+PERÍODO ACTUAL (${mainFrom.toISOString().split('T')[0]} → ${mainTo.toISOString().split('T')[0]}):
+- Visitas: ${main.visits} | PDP: ${main.pdp} | Carrito: ${main.cart} | Checkout: ${main.checkout} | Compras: ${main.purchases}
+- Conversión: ${main.conversionRate}%
+- Fuentes de tráfico: ${main.sources.map(s=>s.source+':'+s.orders).join(', ')||'no disponible'}
+
+PERÍODO ANTERIOR (${compare.from} → ${compare.to}):
+- Visitas: ${compare.visits} | PDP: ${compare.pdp} | Carrito: ${compare.cart} | Checkout: ${compare.checkout} | Compras: ${compare.purchases}
+- Conversión: ${compare.conversionRate}%
+- Fuentes de tráfico: ${compare.sources.map(s=>s.source+':'+s.orders).join(', ')||'no disponible'}
+
+DELTAS:
+- Visitas: ${delta(main.visits,compare.visits)}% | Compras: ${delta(main.purchases,compare.purchases)}% | Conversión: ${delta(main.conversionRate,compare.conversionRate)}%
+
+Produce análisis en español con este formato exacto:
+
+## ANÁLISIS COMPARATIVO DEL FUNNEL
+
+### QUÉ CAMBIÓ
+2-3 cambios más significativos con % y explicación breve
+
+### POR QUÉ PUDO HABER PASADO
+3 hipótesis concretas basadas en los datos (estacionalidad, fuentes de tráfico, cambios en el funnel)
+
+### FUENTES DE TRÁFICO
+Análisis de qué canales crecieron o cayeron y su impacto
+
+### ACCIONES RECOMENDADAS
+3 acciones concretas priorizadas por impacto en revenue
+
+Sé específico con números. Máximo 300 palabras.`;
+
+      try {
+        insights = await callClaude([{role:'user',content:prompt}],
+          'Eres un experto en CRO y analytics para ecommerce. Responde en español, sé específico y orientado a revenue.', 1500);
+      } catch(e) { insights = null; }
+    }
+
     res.json({
-      funnel: [
-        { step: 'Visita',   users: visits,    dropoff: 0 },
-        { step: 'PDP',      users: pdp,       dropoff: Math.round((1-pdp/visits)*100) },
-        { step: 'Carrito',  users: cart,      dropoff: Math.round((1-cart/pdp)*100) },
-        { step: 'Checkout', users: checkout,  dropoff: Math.round((1-checkout/cart)*100) },
-        { step: 'Compra',   users: purchases, dropoff: Math.round((1-purchases/checkout)*100) }
-      ],
-      period: dateRange, totalSessions: visits,
-      conversionRate: visits > 0 ? +((purchases/visits)*100).toFixed(2) : 0,
-      totalOrders: purchases, source: 'VTEX OMS'
+      funnel: buildFunnel(main, compare),
+      compareFunnel: compare ? buildFunnel(compare, null) : null,
+      period: customFrom ? `${mainFrom.toISOString().split('T')[0]} → ${mainTo.toISOString().split('T')[0]}` : `${days} días`,
+      comparePeriod: compare ? `${compare.from} → ${compare.to}` : null,
+      totalSessions: main.visits,
+      conversionRate: main.conversionRate,
+      compareConversionRate: compare?.conversionRate || null,
+      totalOrders: main.purchases,
+      compareOrders: compare?.purchases || null,
+      sources: main.sources,
+      compareSources: compare?.sources || null,
+      insights,
+      source: 'VTEX OMS'
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -276,6 +413,12 @@ Specific locations, psychology-backed, quantified impact.` }],
     'Expert CRO analyst for e-commerce. Specific, psychology-backed, quantified impact.', 2500);
     res.json({ analysis });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Global error handler - always return JSON
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: err.message || 'Error interno del servidor' });
 });
 
 const PORT = process.env.PORT || 3000;
