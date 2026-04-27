@@ -10,7 +10,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-sonnet-4-5-20251001';
+const MODEL = 'claude-sonnet-4-6';
 
 // Credenciales desde variables de entorno
 const VTEX_ACCOUNT       = process.env.VTEX_ACCOUNT;
@@ -231,11 +231,16 @@ Be specific, data-driven, tie to revenue. No fluff.` }],
 
 // ── PDP AUDIT con IA ──────────────────────────────────────────────────────────
 app.post('/api/pdp-audit', async (req, res) => {
-  const { url, productName, category, pricePoint, currentCVR } = req.body;
+  const { url, productName, category, pricePoint, currentCVR, titleTag, metaDesc, description } = req.body;
   if (!url && !productName) return res.status(400).json({ error: 'Ingresá URL o nombre del producto' });
   try {
+    const seoContext = titleTag || metaDesc || description ? `
+SEO DATA FROM VTEX:
+- Title tag: ${titleTag||'(empty)'}
+- Meta description: ${metaDesc||'(empty)'}
+- Description length: ${description?description.length+' chars':'(empty)'}` : '';
     const analysis = await callClaude([{ role:'user', content:`You are an expert CRO analyst for e-commerce product pages.
-Audit: ${url || productName} | Category: ${category} | Price: ${pricePoint} | CVR: ${currentCVR || 'unknown'}
+Audit: ${url || productName} | Category: ${category} | Price: ${pricePoint} | CVR: ${currentCVR || 'unknown'}${seoContext}
 
 ## PRODUCT PAGE AUDIT
 **Page**: ${url||productName} | **Category**: ${category} | **Price**: ${pricePoint} | **CVR**: ${currentCVR||'unknown'}
