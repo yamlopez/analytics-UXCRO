@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -13,7 +12,7 @@
 html,body{height:100%;font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
 .layout{display:flex;height:100vh;overflow:hidden}
 .sidebar{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:1.5rem 0}
-.logo{padding:0 1.25rem 1.5rem;border-bottom:1px solid var(--border);margin-bottom:1.5rem}
+.logo{padding:1.25rem 1.25rem 1.25rem;border-bottom:1px solid var(--border);margin-bottom:1.5rem;display:flex;flex-direction:column;align-items:center}
 .logo h1{font-size:1rem;font-weight:500;letter-spacing:-0.02em}
 .logo span{font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:0.8rem}
 .logo p{font-size:0.65rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px}
@@ -218,7 +217,10 @@ tr:hover td{background:rgba(255,255,255,0.012)}
 <div class="layout">
 
 <nav class="sidebar">
-  <div class="logo"><h1>Ricky <span>Analytics</span></h1><p>// vtex + clarity + ia</p></div>
+  <div class="logo" style="padding:1rem 1.25rem 1rem;display:flex;flex-direction:column;align-items:center;gap:0.5rem">
+  <img src="/logo.png" alt="RS Analytics" style="width:64px;height:64px;object-fit:contain;filter:brightness(1.1)">
+  <p style="font-size:0.6rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;text-align:center;margin:0">Analytics</p>
+</div>
   <div class="nav-section">datos</div>
   <div class="nav-item active" onclick="switchTab('seo',this)"><span>◈</span><span>SEO Productos</span></div>
   <div class="nav-item" onclick="switchTab('funnel',this)"><span>◇</span><span>Funnel</span></div>
