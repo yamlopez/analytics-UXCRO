@@ -12,349 +12,418 @@
   --bg:#0c0c0c;--bg2:#141414;--bg3:#1c1c1c;--bg4:#222;
   --border:#252525;--border2:#333;
   --text:#e2e2dc;--muted:#555;--muted2:#777;
-  --accent:#c8f566;--accent2:#66f5c8;--accent3:#66a8f5;
-  --warn:#f5c866;--danger:#f56666;--info:#66a8f5;
+  --accent:#c8f566;--warn:#f5c866;--danger:#f56666;--info:#66a8f5;
   --good:#c8f566;--radius:6px;
 }
 html,body{height:100%;font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
-
-/* SIDEBAR NAV */
 .layout{display:flex;height:100vh;overflow:hidden}
+
+/* SIDEBAR */
 .sidebar{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:1.5rem 0}
-.sidebar-logo{padding:0 1.25rem 1.5rem;border-bottom:1px solid var(--border);margin-bottom:1.5rem}
-.sidebar-logo h1{font-size:1rem;font-weight:500;letter-spacing:-0.02em;color:var(--text)}
-.sidebar-logo span{font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:0.8rem}
-.sidebar-logo p{font-size:0.7rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:0.6rem 1.25rem;cursor:pointer;transition:all 0.15s;border-left:2px solid transparent;color:var(--muted2);font-size:0.85rem}
-.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.03)}
+.logo{padding:0 1.25rem 1.5rem;border-bottom:1px solid var(--border);margin-bottom:1.5rem}
+.logo h1{font-size:1rem;font-weight:500;letter-spacing:-0.02em}
+.logo span{font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:0.8rem}
+.logo p{font-size:0.65rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px}
+.nav-section{font-size:0.6rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;padding:0 1.25rem;margin:0.75rem 0 0.4rem}
+.nav-item{display:flex;align-items:center;gap:10px;padding:0.55rem 1.25rem;cursor:pointer;transition:all 0.15s;border-left:2px solid transparent;color:var(--muted2);font-size:0.82rem}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.025)}
 .nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(200,245,102,0.04)}
-.nav-icon{font-size:0.9rem;width:18px;text-align:center}
-.nav-label{font-size:0.82rem}
+.nav-icon{font-size:0.8rem;width:16px;text-align:center;flex-shrink:0}
 .sidebar-footer{margin-top:auto;padding:1rem 1.25rem;border-top:1px solid var(--border)}
-.sidebar-footer p{font-size:0.65rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;line-height:1.6}
+.sidebar-footer p{font-size:0.62rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;line-height:1.7}
+
+/* CREDENTIALS BANNER */
+.creds-banner{background:var(--bg2);border-bottom:1px solid var(--border);padding:0.65rem 2rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap}
+.creds-banner label{font-size:0.65rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.creds-banner input{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;padding:0.38rem 0.65rem;border:1px solid var(--border2);background:var(--bg3);color:var(--text);border-radius:var(--radius);outline:none;width:155px}
+.creds-banner input:focus{border-color:var(--accent)}
+.creds-ok{font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--good)}
 
 /* MAIN */
 .main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10}
-.topbar-title{font-size:0.95rem;font-weight:500;color:var(--text)}
-.topbar-sub{font-size:0.72rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px}
-.topbar-actions{display:flex;gap:0.6rem;align-items:center}
-.content{padding:2rem;flex:1}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0.9rem 2rem;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10;gap:1rem;flex-wrap:wrap}
+.topbar-title{font-size:0.9rem;font-weight:500}
+.topbar-sub{font-size:0.68rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px}
+.topbar-actions{display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap}
+.content{padding:1.75rem 2rem;flex:1}
+.tab-content{display:none}.tab-content.active{display:block}
 
 /* BUTTONS */
-.btn{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;padding:0.5rem 1rem;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;border-radius:var(--radius);transition:all 0.15s;letter-spacing:0.03em;white-space:nowrap}
+.btn{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;padding:0.45rem 0.9rem;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;border-radius:var(--radius);transition:all 0.15s;white-space:nowrap}
 .btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
 .btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:500}
 .btn.primary:hover:not(:disabled){background:#b5e05a}
 .btn:disabled{opacity:0.35;cursor:not-allowed}
-.btn.sm{padding:0.35rem 0.7rem;font-size:0.7rem}
-
-/* INPUTS */
-select,input[type=text],input[type=number]{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;padding:0.45rem 0.75rem;border:1px solid var(--border2);background:var(--bg3);color:var(--text);border-radius:var(--radius);outline:none}
+.btn.sm{padding:0.3rem 0.65rem;font-size:0.68rem}
+select,input[type=text],input[type=number],input[type=url]{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;padding:0.42rem 0.7rem;border:1px solid var(--border2);background:var(--bg3);color:var(--text);border-radius:var(--radius);outline:none}
 select:focus,input:focus{border-color:var(--accent)}
-label{font-size:0.72rem;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+label{font-size:0.68rem;color:var(--muted);font-family:'IBM Plex Mono',monospace}
 
-/* TABS */
-.tabs{display:none}
-.tab-content{display:none}
-.tab-content.active{display:block}
-
-/* STAT CARDS */
+/* STATS GRID */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.5rem}
-.stat-card{background:var(--bg2);padding:1rem 1.2rem}
-.stat-label{font-size:0.68rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.4rem}
-.stat-val{font-size:1.5rem;font-weight:300;font-family:'IBM Plex Mono',monospace;line-height:1}
-.stat-val.good{color:var(--good)}
-.stat-val.warn{color:var(--warn)}
-.stat-val.bad{color:var(--danger)}
-.stat-sub{font-size:0.65rem;color:var(--muted);margin-top:4px;font-family:'IBM Plex Mono',monospace}
+.stat-card{background:var(--bg2);padding:0.9rem 1.1rem}
+.stat-label{font-size:0.62rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.35rem}
+.stat-val{font-size:1.4rem;font-weight:300;font-family:'IBM Plex Mono',monospace;line-height:1}
+.stat-val.good{color:var(--good)}.stat-val.warn{color:var(--warn)}.stat-val.bad{color:var(--danger)}
 
 /* LOG BAR */
-.log-bar{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:0.6rem 1rem;margin-bottom:1.5rem;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--muted);display:flex;align-items:center;gap:0.5rem}
-.pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite;flex-shrink:0}
+.log-bar{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:0.55rem 0.9rem;margin-bottom:1.25rem;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--muted);display:flex;align-items:center;gap:0.5rem}
+.pulse{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:blink 1s infinite;flex-shrink:0}
 .pulse.idle{background:var(--muted);animation:none}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
 
 /* TABLE */
 .table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:0.78rem}
-thead th{background:var(--bg2);padding:0.65rem 1rem;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--muted);font-weight:400;letter-spacing:0.05em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
-td{padding:0.6rem 1rem;border-bottom:1px solid #181818;color:var(--text);vertical-align:middle}
+table{width:100%;border-collapse:collapse;font-size:0.76rem}
+thead th{background:var(--bg2);padding:0.6rem 0.9rem;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--muted);font-weight:400;letter-spacing:0.05em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:0.55rem 0.9rem;border-bottom:1px solid #181818;vertical-align:middle}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(255,255,255,0.015)}
-.score-badge{display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:500;width:36px;height:20px;border-radius:3px}
-.sh{background:rgba(200,245,102,0.12);color:var(--good);border:1px solid rgba(200,245,102,0.25)}
-.sm{background:rgba(245,200,102,0.12);color:var(--warn);border:1px solid rgba(245,200,102,0.25)}
-.sl{background:rgba(245,102,102,0.12);color:var(--danger);border:1px solid rgba(245,102,102,0.25)}
-.tag{display:inline-block;font-size:0.62rem;font-family:'IBM Plex Mono',monospace;padding:2px 5px;border-radius:2px;margin:1px}
-.tag-bad{background:rgba(245,102,102,0.08);color:var(--danger);border:1px solid rgba(245,102,102,0.2)}
-.tag-warn{background:rgba(245,200,102,0.08);color:var(--warn);border:1px solid rgba(245,200,102,0.2)}
-.tag-ok{background:rgba(200,245,102,0.08);color:var(--good);border:1px solid rgba(200,245,102,0.2)}
+tr:hover td{background:rgba(255,255,255,0.012)}
+.score-badge{display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;font-weight:500;width:34px;height:19px;border-radius:3px}
+.sh{background:rgba(200,245,102,0.1);color:var(--good);border:1px solid rgba(200,245,102,0.2)}
+.sm{background:rgba(245,200,102,0.1);color:var(--warn);border:1px solid rgba(245,200,102,0.2)}
+.sl{background:rgba(245,102,102,0.1);color:var(--danger);border:1px solid rgba(245,102,102,0.2)}
+.tag{display:inline-block;font-size:0.6rem;font-family:'IBM Plex Mono',monospace;padding:2px 5px;border-radius:2px;margin:1px}
+.tag-bad{background:rgba(245,102,102,0.08);color:var(--danger);border:1px solid rgba(245,102,102,0.18)}
+.tag-warn{background:rgba(245,200,102,0.08);color:var(--warn);border:1px solid rgba(245,200,102,0.18)}
+.tag-ok{background:rgba(200,245,102,0.08);color:var(--good);border:1px solid rgba(200,245,102,0.18)}
 .bar-bg{background:var(--bg3);border-radius:2px;height:3px;width:100%;margin-top:3px;overflow:hidden}
 .bar-fill{height:3px;border-radius:2px}
-.prod-name{font-weight:500;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.78rem}
-.mono-sm{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--muted)}
-.empty{text-align:center;padding:3rem 2rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.75rem}
-.empty-icon{font-size:1.5rem;margin-bottom:0.5rem;color:var(--border2)}
+.prod-name{font-weight:500;max-width:175px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.76rem}
+.mono-sm{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--muted)}
+.empty{text-align:center;padding:3rem 2rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.73rem}
 
-/* FILTER ROW */
-.filter-row{display:flex;gap:0.5rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center}
-.filter-row span{font-size:0.7rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-right:0.25rem}
-.fbtn{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;padding:0.3rem 0.65rem;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;border-radius:3px;transition:all 0.15s}
+/* FILTER */
+.filter-row{display:flex;gap:0.45rem;margin-bottom:1.1rem;flex-wrap:wrap;align-items:center}
+.filter-row span{font-size:0.65rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-right:0.2rem}
+.fbtn{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;padding:0.28rem 0.6rem;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;border-radius:3px;transition:all 0.15s}
 .fbtn:hover{color:var(--text)}
 .fbtn.active{border-color:var(--accent);color:var(--accent);background:rgba(200,245,102,0.05)}
 
-/* SECTION HEADER */
-.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem}
-.section-hdr h2{font-size:0.9rem;font-weight:500;color:var(--text)}
-.section-hdr p{font-size:0.72rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px}
-.controls-row{display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap}
-
 /* FUNNEL */
-.funnel-wrap{display:grid;grid-template-columns:1fr 340px;gap:1.5rem;margin-bottom:1.5rem}
-.funnel-chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem}
-.funnel-chart-box h3{font-size:0.78rem;font-weight:500;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:1.25rem}
-.funnel-steps{display:flex;flex-direction:column;gap:0.5rem}
-.funnel-step{position:relative}
+.two-col{display:grid;grid-template-columns:1fr 280px;gap:1.25rem;margin-bottom:1.25rem}
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem}
+.panel-title{font-size:0.65rem;font-weight:500;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:1rem}
+.funnel-step{margin-bottom:0.7rem}
 .funnel-label-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
-.funnel-step-name{font-size:0.8rem;font-weight:500}
-.funnel-step-users{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--text)}
-.funnel-step-drop{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--danger)}
-.funnel-bar-outer{background:var(--bg3);border-radius:3px;height:28px;overflow:hidden}
-.funnel-bar-inner{height:28px;border-radius:3px;display:flex;align-items:center;padding:0 10px;transition:width 0.6s ease;position:relative}
-.funnel-bar-pct{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;font-weight:500;color:rgba(0,0,0,0.7);white-space:nowrap}
-.funnel-sidebar{display:flex;flex-direction:column;gap:1rem}
-.funnel-kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem}
-.funnel-kpi .k-label{font-size:0.65rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.3rem}
-.funnel-kpi .k-val{font-size:1.3rem;font-weight:300;font-family:'IBM Plex Mono',monospace}
-.funnel-kpi .k-sub{font-size:0.65rem;color:var(--muted);margin-top:3px;font-family:'IBM Plex Mono',monospace}
-.step-colors{background:linear-gradient(135deg,#c8f566,#66f5c8,#66a8f5,#f5c866,#f56666)}
+.f-name{font-size:0.78rem;font-weight:500}
+.f-users{font-family:'IBM Plex Mono',monospace;font-size:0.76rem}
+.f-drop{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--danger)}
+.f-bar-outer{background:var(--bg3);border-radius:3px;height:24px;overflow:hidden}
+.f-bar-inner{height:24px;border-radius:3px;display:flex;align-items:center;padding:0 8px;transition:width 0.6s ease}
+.f-bar-pct{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;font-weight:500;white-space:nowrap}
+.kpi-box{margin-bottom:0.75rem}
+.kpi-label{font-size:0.62rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.25rem}
+.kpi-val{font-size:1.2rem;font-weight:300;font-family:'IBM Plex Mono',monospace}
+.chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.25rem}
 
 /* HEATMAP */
-.heatmap-grid{display:grid;grid-template-columns:1fr 320px;gap:1.5rem}
-.heatmap-visual{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem}
-.heatmap-visual h3{font-size:0.78rem;font-weight:500;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:1rem}
-.heatmap-canvas-wrap{position:relative;background:var(--bg3);border-radius:4px;overflow:hidden;min-height:400px}
+.hm-canvas-wrap{background:var(--bg3);border-radius:4px;overflow:hidden;min-height:360px}
 #heatmapCanvas{width:100%;display:block}
-.hm-legend{display:flex;align-items:center;gap:6px;margin-top:0.75rem}
-.hm-legend-bar{flex:1;height:6px;border-radius:3px;background:linear-gradient(to right,rgba(0,100,255,0.1),rgba(0,200,100,0.4),rgba(255,200,0,0.7),rgba(255,60,0,1))}
-.hm-legend span{font-size:0.62rem;font-family:'IBM Plex Mono',monospace;color:var(--muted)}
-.heatmap-sidebar{display:flex;flex-direction:column;gap:1rem}
-.scroll-depth-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem}
-.scroll-depth-box h4{font-size:0.72rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:1rem}
-.scroll-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.scroll-pct-label{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--muted);width:28px}
-.scroll-bar-bg{flex:1;background:var(--bg3);border-radius:2px;height:16px;overflow:hidden}
-.scroll-bar-fill{height:16px;border-radius:2px;background:var(--accent2);display:flex;align-items:center;padding:0 6px;transition:width 0.5s}
-.scroll-bar-fill span{font-size:0.62rem;font-family:'IBM Plex Mono',monospace;color:rgba(0,0,0,0.6);white-space:nowrap}
-.clicks-table{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;overflow:hidden}
-.clicks-table h4{font-size:0.72rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.75rem}
-.click-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #181818;font-size:0.75rem}
+.hm-legend{display:flex;align-items:center;gap:6px;margin-top:0.6rem}
+.hm-legend-bar{flex:1;height:5px;border-radius:3px;background:linear-gradient(to right,rgba(0,100,255,0.15),rgba(0,200,100,0.5),rgba(255,200,0,0.8),rgba(255,60,0,1))}
+.hm-legend span{font-size:0.6rem;font-family:'IBM Plex Mono',monospace;color:var(--muted)}
+.scroll-row{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.scroll-label{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--muted);width:26px}
+.scroll-bg{flex:1;background:var(--bg3);border-radius:2px;height:14px;overflow:hidden}
+.scroll-fill{height:14px;border-radius:2px;background:#66f5c8;display:flex;align-items:center;padding:0 5px;transition:width 0.5s}
+.scroll-fill span{font-size:0.58rem;font-family:'IBM Plex Mono',monospace;color:rgba(0,0,0,0.6);white-space:nowrap}
+.click-row{display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #181818;font-size:0.72rem}
 .click-row:last-child{border-bottom:none}
-.click-zone{flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.click-count{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--muted);white-space:nowrap}
-.click-pct{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--accent);width:40px;text-align:right}
+.click-zone{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.click-pct{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--accent);width:36px;text-align:right}
 
-/* CHART CANVAS */
-.chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem}
-.chart-box h3{font-size:0.78rem;font-weight:500;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:1rem}
+/* AI ANALYSIS */
+.ai-result{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-top:1.25rem}
+.ai-result h2{font-size:0.9rem;font-weight:500;margin-bottom:1rem;color:var(--text)}
+.ai-content{font-size:0.82rem;line-height:1.8;color:var(--text);white-space:pre-wrap;font-family:'IBM Plex Sans',sans-serif}
+.ai-content h2,
+.ai-content h3{font-size:0.85rem;font-weight:500;color:var(--accent);margin:1.25rem 0 0.5rem;font-family:'IBM Plex Mono',monospace;letter-spacing:0.02em}
+.ai-content strong{color:var(--text);font-weight:500}
+.ai-content hr{border:none;border-top:1px solid var(--border);margin:1rem 0}
+.ai-badge{display:inline-block;font-size:0.6rem;font-family:'IBM Plex Mono',monospace;padding:2px 6px;border-radius:2px;margin-right:4px}
+.ai-badge.critical{background:rgba(245,102,102,0.1);color:var(--danger);border:1px solid rgba(245,102,102,0.2)}
+.ai-badge.high{background:rgba(245,200,102,0.1);color:var(--warn);border:1px solid rgba(245,200,102,0.2)}
+.ai-badge.win{background:rgba(200,245,102,0.1);color:var(--good);border:1px solid rgba(200,245,102,0.2)}
+.loading-shimmer{background:linear-gradient(90deg,var(--bg3) 25%,var(--bg4) 50%,var(--bg3) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;height:12px;border-radius:3px;margin-bottom:8px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-/* DATE RANGE */
-.date-badge{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:0.3rem 0.7rem;color:var(--muted)}
+/* PDP AUDIT */
+.audit-form{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.25rem}
+.audit-form h3{font-size:0.72rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:1rem}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+.form-field{display:flex;flex-direction:column;gap:5px}
+.form-field input,.form-field select{width:100%}
+.form-field-full{grid-column:1/-1}
+.source-tag{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;background:rgba(200,245,102,0.08);border:1px solid rgba(200,245,102,0.18);color:var(--good);border-radius:3px;padding:2px 6px;margin-left:0.4rem}
 
-@media(max-width:900px){
-  .sidebar{width:180px;min-width:180px}
-  .funnel-wrap,.heatmap-grid{grid-template-columns:1fr}
+@media(max-width:920px){
+  .sidebar{width:48px;min-width:48px}
+  .logo p,.logo h1 span,.nav-item span:last-child,.nav-section,.sidebar-footer{display:none}
+  .nav-item{padding:0.6rem;justify-content:center}
+  .two-col{grid-template-columns:1fr}
   .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .form-grid{grid-template-columns:1fr}
+  .creds-banner input{width:120px}
 }
 </style>
 </head>
 <body>
 <div class="layout">
 
-  <!-- SIDEBAR -->
-  <nav class="sidebar">
-    <div class="sidebar-logo">
-      <h1>Ricky <span>Analytics</span></h1>
-      <p>// vtex + clarity</p>
-    </div>
-    <div class="nav-item active" onclick="switchTab('seo',this)">
-      <span class="nav-icon">◈</span><span class="nav-label">SEO Productos</span>
-    </div>
-    <div class="nav-item" onclick="switchTab('funnel',this)">
-      <span class="nav-icon">◇</span><span class="nav-label">Funnel</span>
-    </div>
-    <div class="nav-item" onclick="switchTab('heatmap',this)">
-      <span class="nav-icon">◉</span><span class="nav-label">Mapa de Calor</span>
-    </div>
-    <div class="sidebar-footer">
-      <p>VTEX · Microsoft Clarity<br>Anthropic Claude<br>© Ricky 2025</p>
-    </div>
-  </nav>
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo">
+    <h1>Ricky <span>Analytics</span></h1>
+    <p>// vtex + clarity + ia</p>
+  </div>
+  <div class="nav-section">datos</div>
+  <div class="nav-item active" onclick="switchTab('seo',this)" title="SEO Productos">
+    <span class="nav-icon">◈</span><span>SEO Productos</span>
+  </div>
+  <div class="nav-item" onclick="switchTab('funnel',this)" title="Funnel">
+    <span class="nav-icon">◇</span><span>Funnel</span>
+  </div>
+  <div class="nav-section">clarity + ia</div>
+  <div class="nav-item" onclick="switchTab('heatmap',this)" title="Mapa de Calor">
+    <span class="nav-icon">◉</span><span>Mapa de Calor</span>
+  </div>
+  <div class="nav-item" onclick="switchTab('pdp',this)" title="Auditoría PDP">
+    <span class="nav-icon">◎</span><span>Auditoría PDP</span>
+  </div>
+  <div class="sidebar-footer">
+    <p>VTEX Direct API<br>Microsoft Clarity<br>Anthropic Claude<br>© Ricky 2025</p>
+  </div>
+</nav>
 
-  <!-- MAIN CONTENT -->
-  <div class="main">
+<!-- MAIN -->
+<div class="main">
 
-    <!-- ===================== SEO TAB ===================== -->
-    <div id="tab-seo" class="tab-content active">
-      <div class="topbar">
-        <div>
-          <div class="topbar-title">Análisis SEO de Productos</div>
-          <div class="topbar-sub">VTEX catalog · títulos · meta descriptions · imágenes · contenido</div>
+<!-- CREDENTIALS BANNER -->
+<div class="creds-banner">
+  <label>vtex account</label>
+  <input id="cAccount" type="text" placeholder="mitienda" autocomplete="off">
+  <label>app key</label>
+  <input id="cKey" type="text" placeholder="vtex.io.key..." autocomplete="off">
+  <label>app token</label>
+  <input id="cToken" type="password" placeholder="••••••••" autocomplete="off">
+  <button class="btn primary btn-sm" onclick="saveCreds()">guardar</button>
+  <span class="creds-ok" id="credsOk" style="display:none">✓ guardado</span>
+</div>
+
+<!-- ═══ SEO TAB ═══════════════════════════════════════════════════════════════ -->
+<div id="tab-seo" class="tab-content active">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Análisis SEO de Productos</div>
+      <div class="topbar-sub">VTEX Catalog API · títulos · meta desc · imágenes · contenido</div>
+    </div>
+    <div class="topbar-actions">
+      <label>límite</label>
+      <input type="number" id="seoLimit" value="50" min="1" max="50" style="width:64px">
+      <button class="btn primary" id="seoBtn" onclick="runSEO()">▶ analizar</button>
+      <button class="btn" id="seoExportBtn" onclick="exportSEO()" style="display:none">↓ CSV</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">productos</div><div class="stat-val" id="s1">—</div></div>
+      <div class="stat-card"><div class="stat-label">score promedio</div><div class="stat-val" id="s2">—</div></div>
+      <div class="stat-card"><div class="stat-label">críticos</div><div class="stat-val bad" id="s3">—</div></div>
+      <div class="stat-card"><div class="stat-label">ok ≥80</div><div class="stat-val good" id="s4">—</div></div>
+    </div>
+    <div class="log-bar"><span class="pulse idle" id="seoDot"></span><span id="seoLog">ingresá credenciales VTEX arriba y presioná analizar</span></div>
+    <div id="seoFilters" class="filter-row" style="display:none">
+      <span>filtrar:</span>
+      <button class="fbtn active" onclick="seoFilter('all',this)">todos</button>
+      <button class="fbtn" onclick="seoFilter('bad',this)">críticos</button>
+      <button class="fbtn" onclick="seoFilter('mid',this)">mediocres</button>
+      <button class="fbtn" onclick="seoFilter('good',this)">buenos</button>
+      <button class="fbtn" onclick="seoFilter('no_title',this)">sin título</button>
+      <button class="fbtn" onclick="seoFilter('no_meta',this)">sin meta</button>
+      <button class="fbtn" onclick="seoFilter('no_img',this)">sin imagen</button>
+    </div>
+    <div class="table-wrap" id="seoTable">
+      <div class="empty">ingresá credenciales VTEX arriba y presioná analizar</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FUNNEL TAB ════════════════════════════════════════════════════════════ -->
+<div id="tab-funnel" class="tab-content">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Funnel de Conversión</div>
+      <div class="topbar-sub">VTEX OMS · Visita → PDP → Carrito → Checkout → Compra</div>
+    </div>
+    <div class="topbar-actions">
+      <label>período</label>
+      <select id="funnelRange"><option value="7">7 días</option><option value="14">14 días</option><option value="30">30 días</option></select>
+      <button class="btn primary" id="funnelBtn" onclick="runFunnel()">▶ cargar funnel</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">visitas est.</div><div class="stat-val" id="f1">—</div></div>
+      <div class="stat-card"><div class="stat-label">conversión</div><div class="stat-val good" id="f2">—</div></div>
+      <div class="stat-card"><div class="stat-label">mayor drop-off</div><div class="stat-val bad" id="f3">—</div></div>
+      <div class="stat-card"><div class="stat-label">órdenes reales</div><div class="stat-val" id="f4">—</div></div>
+    </div>
+    <div class="log-bar"><span class="pulse idle" id="funnelDot"></span><span id="funnelLog">seleccioná período y cargá el funnel</span></div>
+    <div class="two-col" id="funnelWrap" style="display:none">
+      <div class="panel">
+        <div class="panel-title">pasos del funnel <span class="source-tag">VTEX OMS</span></div>
+        <div id="funnelSteps"></div>
+      </div>
+      <div class="panel" id="funnelKPIs"></div>
+    </div>
+    <div class="chart-box" id="funnelChartBox" style="display:none">
+      <div class="panel-title">usuarios por etapa</div>
+      <canvas id="funnelChart" height="75"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ HEATMAP TAB ═══════════════════════════════════════════════════════════ -->
+<div id="tab-heatmap" class="tab-content">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Mapa de Calor + Grabaciones</div>
+      <div class="topbar-sub">Microsoft Clarity · clics · scroll · análisis IA de sesiones</div>
+    </div>
+    <div class="topbar-actions">
+      <label>período</label>
+      <select id="hmRange"><option value="7">7 días</option><option value="14">14 días</option><option value="30">30 días</option></select>
+      <label>página</label>
+      <input type="text" id="hmPage" value="/" style="width:110px">
+      <button class="btn primary" id="hmBtn" onclick="runHeatmap()">▶ cargar mapa</button>
+      <button class="btn" id="hmAnalyzeBtn" onclick="runRecordingsAnalysis()" style="display:none">✦ analizar grabaciones</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">clics totales</div><div class="stat-val" id="h1">—</div></div>
+      <div class="stat-card"><div class="stat-label">scroll promedio</div><div class="stat-val" id="h2">—</div></div>
+      <div class="stat-card"><div class="stat-label">sesiones</div><div class="stat-val" id="h3">—</div></div>
+      <div class="stat-card"><div class="stat-label">duración media</div><div class="stat-val" id="h4">—</div></div>
+    </div>
+    <div class="log-bar"><span class="pulse idle" id="hmDot"></span><span id="hmLog">seleccioná página y período, luego cargá el mapa</span></div>
+    <div class="two-col" id="hmGrid" style="display:none">
+      <div class="panel">
+        <div class="panel-title">mapa de clics <span class="source-tag">Microsoft Clarity</span></div>
+        <div class="hm-canvas-wrap"><canvas id="heatmapCanvas"></canvas></div>
+        <div class="hm-legend"><span>frío</span><div class="hm-legend-bar"></div><span>caliente</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div class="panel">
+          <div class="panel-title">scroll depth</div>
+          <div id="scrollDepthBars"></div>
         </div>
-        <div class="topbar-actions">
-          <label>límite</label>
-          <input type="number" id="seoLimit" value="50" min="1" max="500" style="width:70px">
-          <button class="btn primary" id="seoBtn" onclick="runSEO()">▶ analizar</button>
-          <button class="btn" id="seoExportBtn" onclick="exportSEO()" style="display:none">↓ CSV</button>
+        <div class="panel">
+          <div class="panel-title">zonas con más clics</div>
+          <div id="clicksTable"></div>
         </div>
       </div>
-      <div class="content">
-        <div class="stats-grid">
-          <div class="stat-card"><div class="stat-label">productos</div><div class="stat-val" id="s1">—</div></div>
-          <div class="stat-card"><div class="stat-label">score promedio</div><div class="stat-val" id="s2">—</div></div>
-          <div class="stat-card"><div class="stat-label">críticos</div><div class="stat-val bad" id="s3">—</div></div>
-          <div class="stat-card"><div class="stat-label">ok (≥80)</div><div class="stat-val good" id="s4">—</div></div>
-        </div>
-        <div class="log-bar"><span class="pulse idle" id="seoDot"></span><span id="seoLog">listo para analizar</span></div>
-        <div id="seoFilters" class="filter-row" style="display:none">
-          <span>filtrar:</span>
-          <button class="fbtn active" onclick="seoFilter('all',this)">todos</button>
-          <button class="fbtn" onclick="seoFilter('bad',this)">críticos</button>
-          <button class="fbtn" onclick="seoFilter('mid',this)">mediocres</button>
-          <button class="fbtn" onclick="seoFilter('good',this)">buenos</button>
-          <button class="fbtn" onclick="seoFilter('no_title',this)">sin título</button>
-          <button class="fbtn" onclick="seoFilter('no_meta',this)">sin meta</button>
-          <button class="fbtn" onclick="seoFilter('no_img',this)">sin imagen</button>
-        </div>
-        <div class="table-wrap" id="seoTable">
-          <div class="empty"><div class="empty-icon">◻</div>presioná "analizar" para comenzar</div>
-        </div>
-      </div>
     </div>
+    <!-- AI Analysis of recordings -->
+    <div id="recAnalysisWrap" style="display:none">
+      <div class="log-bar"><span class="pulse idle" id="recDot"></span><span id="recLog">presioná "analizar grabaciones" para obtener insights con IA</span></div>
+      <div id="recResult"></div>
+    </div>
+  </div>
+</div>
 
-    <!-- ===================== FUNNEL TAB ===================== -->
-    <div id="tab-funnel" class="tab-content">
-      <div class="topbar">
-        <div>
-          <div class="topbar-title">Funnel de Conversión</div>
-          <div class="topbar-sub">Microsoft Clarity · Visita → PDP → Carrito → Checkout → Compra</div>
+<!-- ═══ PDP AUDIT TAB ═════════════════════════════════════════════════════════ -->
+<div id="tab-pdp" class="tab-content">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Auditoría PDP</div>
+      <div class="topbar-sub">Análisis IA · triggers psicológicos · trust signals · CRO · A/B tests</div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="audit-form">
+      <div class="panel-title">datos del producto a auditar</div>
+      <div class="form-grid">
+        <div class="form-field form-field-full">
+          <label>URL del producto (o nombre si no tenés URL)</label>
+          <input type="url" id="pdpUrl" placeholder="https://mitienda.vtex.com/producto-ejemplo/p">
         </div>
-        <div class="topbar-actions">
-          <label>período</label>
-          <select id="funnelRange">
-            <option value="7d">7 días</option>
-            <option value="14d">14 días</option>
-            <option value="30d">30 días</option>
+        <div class="form-field">
+          <label>categoría del producto</label>
+          <input type="text" id="pdpCategory" placeholder="ej: zapatillas running, cosmética, electrónica">
+        </div>
+        <div class="form-field">
+          <label>rango de precio</label>
+          <select id="pdpPrice">
+            <option value="budget">económico (bajo)</option>
+            <option value="mid-range" selected>mid-range</option>
+            <option value="premium">premium</option>
+            <option value="luxury">lujo</option>
           </select>
-          <button class="btn primary" id="funnelBtn" onclick="runFunnel()">▶ cargar funnel</button>
+        </div>
+        <div class="form-field">
+          <label>CVR actual (opcional)</label>
+          <input type="text" id="pdpCVR" placeholder="ej: 2.3%">
+        </div>
+        <div class="form-field">
+          <label>nombre del producto</label>
+          <input type="text" id="pdpName" placeholder="ej: Zapatilla Nike Air Max 90">
         </div>
       </div>
-      <div class="content">
-        <div class="stats-grid">
-          <div class="stat-card"><div class="stat-label">sesiones totales</div><div class="stat-val" id="f1">—</div></div>
-          <div class="stat-card"><div class="stat-label">conversión total</div><div class="stat-val good" id="f2">—</div></div>
-          <div class="stat-card"><div class="stat-label">mayor drop-off</div><div class="stat-val bad" id="f3">—</div></div>
-          <div class="stat-card"><div class="stat-label">compras</div><div class="stat-val" id="f4">—</div></div>
-        </div>
-        <div class="log-bar"><span class="pulse idle" id="funnelDot"></span><span id="funnelLog">seleccioná período y cargá el funnel</span></div>
-        <div class="funnel-wrap" id="funnelWrap" style="display:none">
-          <div class="funnel-chart-box">
-            <h3>pasos del funnel</h3>
-            <div class="funnel-steps" id="funnelSteps"></div>
-          </div>
-          <div class="funnel-sidebar" id="funnelSide"></div>
-        </div>
-        <div class="chart-box" id="funnelChartBox" style="display:none">
-          <h3>usuarios por etapa</h3>
-          <canvas id="funnelChart" height="80"></canvas>
-        </div>
+      <div style="margin-top:1rem;display:flex;gap:0.5rem;align-items:center">
+        <button class="btn primary" id="pdpBtn" onclick="runPDPAudit()">✦ auditar con IA</button>
+        <span style="font-size:0.65rem;color:var(--muted);font-family:'IBM Plex Mono',monospace">análisis completo · triggers psicológicos · trust signals · quick wins · A/B tests</span>
       </div>
     </div>
+    <div class="log-bar"><span class="pulse idle" id="pdpDot"></span><span id="pdpLog">completá los datos del producto y presioná auditar</span></div>
+    <div id="pdpResult"></div>
+  </div>
+</div>
 
-    <!-- ===================== HEATMAP TAB ===================== -->
-    <div id="tab-heatmap" class="tab-content">
-      <div class="topbar">
-        <div>
-          <div class="topbar-title">Mapa de Calor</div>
-          <div class="topbar-sub">Microsoft Clarity · clics · scroll depth · zonas calientes</div>
-        </div>
-        <div class="topbar-actions">
-          <label>período</label>
-          <select id="hmRange">
-            <option value="7d">7 días</option>
-            <option value="14d">14 días</option>
-            <option value="30d">30 días</option>
-          </select>
-          <label style="margin-left:0.5rem">página</label>
-          <input type="text" id="hmPage" value="/" style="width:120px">
-          <button class="btn primary" id="hmBtn" onclick="runHeatmap()">▶ cargar mapa</button>
-        </div>
-      </div>
-      <div class="content">
-        <div class="stats-grid">
-          <div class="stat-card"><div class="stat-label">clics totales</div><div class="stat-val" id="h1">—</div></div>
-          <div class="stat-card"><div class="stat-label">scroll promedio</div><div class="stat-val" id="h2">—</div></div>
-          <div class="stat-card"><div class="stat-label">sesiones</div><div class="stat-val" id="h3">—</div></div>
-          <div class="stat-card"><div class="stat-label">duración media</div><div class="stat-val" id="h4">—</div></div>
-        </div>
-        <div class="log-bar"><span class="pulse idle" id="hmDot"></span><span id="hmLog">seleccioná página y período</span></div>
-        <div class="heatmap-grid" id="hmGrid" style="display:none">
-          <div class="heatmap-visual">
-            <h3>mapa de clics</h3>
-            <div class="heatmap-canvas-wrap">
-              <canvas id="heatmapCanvas"></canvas>
-            </div>
-            <div class="hm-legend">
-              <span>frío</span>
-              <div class="hm-legend-bar"></div>
-              <span>caliente</span>
-            </div>
-          </div>
-          <div class="heatmap-sidebar">
-            <div class="scroll-depth-box">
-              <h4>profundidad de scroll</h4>
-              <div id="scrollDepthBars"></div>
-            </div>
-            <div class="clicks-table">
-              <h4>zonas con más clics</h4>
-              <div id="clicksTable"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /main -->
+</div><!-- /main -->
 </div><!-- /layout -->
 
 <script>
-// ========== NAV ==========
+// ── NAV ──────────────────────────────────────────────────────────────────────
 function switchTab(name, el) {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
   el.classList.add('active');
 }
 
-// ========== UTILS ==========
+// ── CREDENTIALS ──────────────────────────────────────────────────────────────
+let C = { account:'', appKey:'', appToken:'' };
+function saveCreds() {
+  C.account  = document.getElementById('cAccount').value.trim();
+  C.appKey   = document.getElementById('cKey').value.trim();
+  C.appToken = document.getElementById('cToken').value.trim();
+  const ok = document.getElementById('credsOk');
+  ok.style.display='';
+  setTimeout(()=>ok.style.display='none', 2000);
+}
+
+// ── UTILS ────────────────────────────────────────────────────────────────────
 function log(dotId, logId, msg, active=true) {
   document.getElementById(logId).textContent = msg;
-  const d = document.getElementById(dotId);
-  d.className = 'pulse' + (active ? '' : ' idle');
+  document.getElementById(dotId).className = 'pulse'+(active?'':' idle');
 }
-function fmt(n) { return n ? n.toLocaleString('es-AR') : '—'; }
-function post(url, body) {
-  return fetch(url, {
-    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
-  }).then(r => r.json());
+function fmt(n) { return (n||0).toLocaleString('es-AR'); }
+async function post(url, body) {
+  const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return r.json();
+}
+function showLoading(el, lines=4) {
+  el.innerHTML = Array(lines).fill('<div class="loading-shimmer"></div>').join('');
 }
 
-// ========== SEO ==========
-let seoData = [], seoCurrentFilter = 'all';
+// ── SEO ──────────────────────────────────────────────────────────────────────
+let seoData=[], seoF='all';
 
 function analyzeSEO(p) {
-  const issues = [], title=(p.titleTag||p.productName||'').trim();
+  const issues=[];
+  const title=(p.titleTag||p.productName||'').trim();
   const meta=(p.metaTagDescription||'').trim();
   const desc=(p.description||'').replace(/<[^>]*>/g,'').trim();
   const imgs=p.images||[];
@@ -370,44 +439,43 @@ function analyzeSEO(p) {
   if(!desc){score-=20;issues.push({t:'bad',l:'sin descripción'});}
   else if(desc.length<100){score-=8;issues.push({t:'warn',l:`desc corta (${desc.length}c)`});}
   else issues.push({t:'ok',l:`desc ok (${desc.length}c)`});
-  if(imgs.length===0){score-=15;issues.push({t:'bad',l:'sin imágenes'});}
-  else{
+  if(!imgs.length){score-=15;issues.push({t:'bad',l:'sin imágenes'});}
+  else {
     const noAlt=imgs.filter(i=>!i.imageAlt&&!i.imageLabel).length;
     if(noAlt===imgs.length){score-=10;issues.push({t:'warn',l:`${imgs.length} imgs sin alt`});}
     else if(noAlt>0){score-=5;issues.push({t:'warn',l:`${noAlt}/${imgs.length} sin alt`});}
     else issues.push({t:'ok',l:`${imgs.length} imgs con alt`});
   }
-  return {...p,_score:Math.max(0,Math.min(100,score)),_issues:issues,_title:title,_meta:meta,_desc:desc};
+  return{...p,_score:Math.max(0,Math.min(100,score)),_issues:issues,_title:title,_meta:meta,_desc:desc};
 }
 
 async function runSEO() {
-  const btn=document.getElementById('seoBtn');
-  btn.disabled=true;
-  seoData=[];
-  renderSEOTable([]);
+  if(!C.account||!C.appKey||!C.appToken){log('seoDot','seoLog','⚠ ingresá credenciales VTEX arriba primero',false);return;}
+  const btn=document.getElementById('seoBtn');btn.disabled=true;
+  seoData=[];renderSEOTable([]);
   document.getElementById('seoFilters').style.display='none';
   document.getElementById('seoExportBtn').style.display='none';
-  log('seoDot','seoLog','conectando con VTEX...');
+  log('seoDot','seoLog','conectando con VTEX Catalog API...');
   const limit=parseInt(document.getElementById('seoLimit').value)||50;
   try {
-    const res=await post('/api/seo',{limit});
+    const res=await post('/api/seo',{...C,limit});
     if(res.error) throw new Error(res.error);
     seoData=res.products.map(analyzeSEO);
-    const n=seoData.length, avg=Math.round(seoData.reduce((s,p)=>s+p._score,0)/n);
+    const n=seoData.length, avg=n?Math.round(seoData.reduce((s,p)=>s+p._score,0)/n):0;
     const bad=seoData.filter(p=>p._score<50).length, good=seoData.filter(p=>p._score>=80).length;
     document.getElementById('s1').textContent=n;
     const s2=document.getElementById('s2');s2.textContent=avg+'%';s2.className='stat-val '+(avg>=80?'good':avg>=50?'warn':'bad');
     document.getElementById('s3').textContent=bad;document.getElementById('s4').textContent=good;
     document.getElementById('seoFilters').style.display='flex';
     document.getElementById('seoExportBtn').style.display='';
-    seoFilter(seoCurrentFilter,document.querySelector('.fbtn.active'));
+    seoFilter(seoF, document.querySelector('.fbtn.active'));
     log('seoDot','seoLog',`análisis completo · ${n} productos procesados`,false);
-  } catch(e){ log('seoDot','seoLog','error: '+e.message,false); }
+  } catch(e){log('seoDot','seoLog','error: '+e.message,false);}
   btn.disabled=false;
 }
 
-function seoFilter(f, el) {
-  seoCurrentFilter=f;
+function seoFilter(f,el) {
+  seoF=f;
   document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
   let d=seoData;
@@ -416,14 +484,14 @@ function seoFilter(f, el) {
   else if(f==='good') d=d.filter(p=>p._score>=80);
   else if(f==='no_title') d=d.filter(p=>!p._title);
   else if(f==='no_meta') d=d.filter(p=>!p._meta);
-  else if(f==='no_img') d=d.filter(p=>!p.images||p.images.length===0);
+  else if(f==='no_img') d=d.filter(p=>!p.images||!p.images.length);
   renderSEOTable(d);
 }
 
 function renderSEOTable(products) {
   const wrap=document.getElementById('seoTable');
-  if(!products.length&&!seoData.length){wrap.innerHTML='<div class="empty"><div class="empty-icon">◻</div>presioná "analizar" para comenzar</div>';return;}
-  if(!products.length){wrap.innerHTML='<div class="empty"><div class="empty-icon">◻</div>ningún producto coincide</div>';return;}
+  if(!products.length&&!seoData.length){wrap.innerHTML='<div class="empty">ingresá credenciales y presioná analizar</div>';return;}
+  if(!products.length){wrap.innerHTML='<div class="empty">ningún producto coincide con el filtro</div>';return;}
   const sorted=[...products].sort((a,b)=>a._score-b._score);
   let h=`<table><thead><tr><th>#</th><th>producto</th><th>score</th><th>título seo</th><th>meta desc</th><th>imgs</th><th>issues</th></tr></thead><tbody>`;
   sorted.forEach((p,i)=>{
@@ -433,8 +501,8 @@ function renderSEOTable(products) {
       <td class="mono-sm">${i+1}</td>
       <td><div class="prod-name">${p.productName||'—'}</div><div class="mono-sm">${p.productId||''}</div></td>
       <td><span class="score-badge ${cls}">${sc}</span><div class="bar-bg"><div class="bar-fill" style="width:${sc}%;background:${bc}"></div></div></td>
-      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.74rem;color:${p._title?'var(--text)':'var(--muted)'}">${(p._title||'—').slice(0,45)}${p._title&&p._title.length>45?'…':''}</td>
-      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.74rem;color:${p._meta?'var(--text)':'var(--muted)'}">${(p._meta||'—').slice(0,45)}${p._meta&&p._meta.length>45?'…':''}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.72rem;color:${p._title?'var(--text)':'var(--muted)'}">${(p._title||'—').slice(0,42)}${p._title&&p._title.length>42?'…':''}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.72rem;color:${p._meta?'var(--text)':'var(--muted)'}">${(p._meta||'—').slice(0,42)}${p._meta&&p._meta.length>42?'…':''}</td>
       <td class="mono-sm">${(p.images||[]).length}</td>
       <td>${p._issues.map(iss=>`<span class="tag tag-${iss.t}">${iss.l}</span>`).join('')}</td>
     </tr>`;
@@ -444,163 +512,136 @@ function renderSEOTable(products) {
 
 function exportSEO() {
   if(!seoData.length) return;
-  const h=['ID','Nombre','Score','Título','Largo Título','Meta Desc','Largo Meta','Desc (chars)','Imágenes','Issues'];
-  const rows=seoData.map(p=>[p.productId||'',`"${(p.productName||'').replace(/"/g,'""')}"`,p._score,`"${(p._title||'').replace(/"/g,'""')}"`,p._title.length,`"${(p._meta||'').replace(/"/g,'""')}"`,p._meta.length,p._desc.length,(p.images||[]).length,`"${p._issues.map(i=>i.l).join(', ')}"`]);
+  const h=['ID','Nombre','Score','Título','Largo Título','Meta Desc','Largo Meta','Desc chars','Imágenes','Issues'];
+  const rows=seoData.map(p=>[p.productId,`"${(p.productName||'').replace(/"/g,'""')}"`,p._score,`"${(p._title||'').replace(/"/g,'""')}"`,p._title.length,`"${(p._meta||'').replace(/"/g,'""')}"`,p._meta.length,p._desc.length,(p.images||[]).length,`"${p._issues.map(i=>i.l).join(', ')}"`]);
   const csv=[h.join(','),...rows.map(r=>r.join(','))].join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='seo_ricky.csv';a.click();
 }
 
-// ========== FUNNEL ==========
-let funnelChart = null;
-const STEP_COLORS = ['#c8f566','#66f5c8','#66a8f5','#f5c866','#f07a66'];
+// ── FUNNEL ───────────────────────────────────────────────────────────────────
+let funnelChart=null;
+const FC=['#c8f566','#66f5c8','#66a8f5','#f5c866','#f07a66'];
 
 async function runFunnel() {
+  if(!C.account||!C.appKey||!C.appToken){log('funnelDot','funnelLog','⚠ ingresá credenciales VTEX arriba primero',false);return;}
   const btn=document.getElementById('funnelBtn');btn.disabled=true;
   document.getElementById('funnelWrap').style.display='none';
   document.getElementById('funnelChartBox').style.display='none';
-  log('funnelDot','funnelLog','conectando con Microsoft Clarity...');
+  log('funnelDot','funnelLog','consultando VTEX OMS...');
+  const dateRange=document.getElementById('funnelRange').value;
   try {
-    const range=document.getElementById('funnelRange').value;
-    const data=await post('/api/funnel',{dateRange:range});
+    const data=await post('/api/funnel',{...C,dateRange});
     if(data.error) throw new Error(data.error);
     const steps=data.funnel||[];
     document.getElementById('f1').textContent=fmt(data.totalSessions);
     document.getElementById('f2').textContent=(data.conversionRate||0).toFixed(2)+'%';
     const maxDrop=steps.reduce((m,s)=>s.dropoff>m.v?{v:s.dropoff,n:s.step}:m,{v:0,n:'—'});
     document.getElementById('f3').textContent=maxDrop.n;
-    const last=steps[steps.length-1];
-    document.getElementById('f4').textContent=fmt(last?.users||0);
-    renderFunnel(steps,data);
+    document.getElementById('f4').textContent=fmt(data.totalOrders);
+    renderFunnel(steps, data);
     document.getElementById('funnelWrap').style.display='grid';
     document.getElementById('funnelChartBox').style.display='block';
-    log('funnelDot','funnelLog',`funnel cargado · ${range}`,false);
-  } catch(e){ log('funnelDot','funnelLog','error: '+e.message,false); }
+    log('funnelDot','funnelLog',`funnel cargado · ${dateRange} días · fuente: ${data.source}`,false);
+  } catch(e){log('funnelDot','funnelLog','error: '+e.message,false);}
   btn.disabled=false;
 }
 
 function renderFunnel(steps, data) {
-  const stepsEl=document.getElementById('funnelSteps');
   const first=steps[0]?.users||1;
-  stepsEl.innerHTML=steps.map((s,i)=>{
+  document.getElementById('funnelSteps').innerHTML=steps.map((s,i)=>{
     const pct=Math.round((s.users/first)*100);
     return `<div class="funnel-step">
       <div class="funnel-label-row">
-        <span class="funnel-step-name" style="color:${STEP_COLORS[i]}">${s.step}</span>
-        <div style="display:flex;gap:12px;align-items:baseline">
-          <span class="funnel-step-users">${fmt(s.users)}</span>
-          ${i>0?`<span class="funnel-step-drop">-${s.dropoff}%</span>`:''}
+        <span class="f-name" style="color:${FC[i]}">${s.step}</span>
+        <div style="display:flex;gap:10px;align-items:baseline">
+          <span class="f-users">${fmt(s.users)}</span>
+          ${i>0?`<span class="f-drop">-${s.dropoff}%</span>`:''}
         </div>
       </div>
-      <div class="funnel-bar-outer">
-        <div class="funnel-bar-inner" style="width:${pct}%;background:${STEP_COLORS[i]}20;border-left:3px solid ${STEP_COLORS[i]}">
-          <span class="funnel-bar-pct" style="color:${STEP_COLORS[i]}">${pct}%</span>
+      <div class="f-bar-outer">
+        <div class="f-bar-inner" style="width:${pct}%;background:${FC[i]}20;border-left:3px solid ${FC[i]}">
+          <span class="f-bar-pct" style="color:${FC[i]}">${pct}%</span>
         </div>
       </div>
     </div>`;
   }).join('');
 
-  const sideEl=document.getElementById('funnelSide');
-  const kpis=[
-    {l:'período',v:data.period,s:''},
-    {l:'tasa PDP→Carrito',v:steps[2]?(100-steps[2].dropoff)+'%':'—',s:''},
-    {l:'abandono checkout',v:steps[4]?steps[4].dropoff+'%':'—',s:''},
-  ];
-  sideEl.innerHTML=kpis.map(k=>`<div class="funnel-kpi"><div class="k-label">${k.l}</div><div class="k-val">${k.v}</div></div>`).join('');
+  document.getElementById('funnelKPIs').innerHTML=`
+    <div class="panel-title">métricas clave</div>
+    <div class="kpi-box"><div class="kpi-label">período</div><div class="kpi-val">${data.period} días</div></div>
+    <div class="kpi-box"><div class="kpi-label">conv. visita→compra</div><div class="kpi-val" style="color:var(--good)">${data.conversionRate}%</div></div>
+    <div class="kpi-box"><div class="kpi-label">conv. PDP→Carrito</div><div class="kpi-val">${steps[2]?(100-steps[2].dropoff)+'%':'—'}</div></div>
+    <div class="kpi-box"><div class="kpi-label">abandono checkout</div><div class="kpi-val" style="color:var(--danger)">${steps[4]?steps[4].dropoff+'%':'—'}</div></div>
+    <div style="margin-top:0.5rem;font-size:0.6rem;color:var(--muted);font-family:'IBM Plex Mono',monospace">* visitas estimadas a partir de órdenes reales con ratios de conversión estándar</div>`;
 
   if(funnelChart) funnelChart.destroy();
-  const ctx=document.getElementById('funnelChart').getContext('2d');
-  funnelChart=new Chart(ctx,{
+  funnelChart=new Chart(document.getElementById('funnelChart').getContext('2d'),{
     type:'bar',
-    data:{
-      labels:steps.map(s=>s.step),
-      datasets:[{data:steps.map(s=>s.users),backgroundColor:STEP_COLORS.map(c=>c+'33'),borderColor:STEP_COLORS,borderWidth:1.5,borderRadius:3}]
-    },
-    options:{
-      plugins:{legend:{display:false}},
-      scales:{
-        x:{grid:{color:'#1e1e1e'},ticks:{color:'#555',font:{family:'IBM Plex Mono',size:11}}},
-        y:{grid:{color:'#1a1a1a'},ticks:{color:'#555',font:{family:'IBM Plex Mono',size:11},callback:v=>v.toLocaleString()}}
-      },
-      responsive:true
-    }
+    data:{labels:steps.map(s=>s.step),datasets:[{data:steps.map(s=>s.users),backgroundColor:FC.map(c=>c+'30'),borderColor:FC,borderWidth:1.5,borderRadius:3}]},
+    options:{plugins:{legend:{display:false}},scales:{x:{grid:{color:'#1e1e1e'},ticks:{color:'#555',font:{family:'IBM Plex Mono',size:10}}},y:{grid:{color:'#1a1a1a'},ticks:{color:'#555',font:{family:'IBM Plex Mono',size:10},callback:v=>v.toLocaleString()}}},responsive:true}
   });
 }
 
-// ========== HEATMAP ==========
+// ── HEATMAP (Microsoft Clarity) ───────────────────────────────────────────────
 async function runHeatmap() {
   const btn=document.getElementById('hmBtn');btn.disabled=true;
   document.getElementById('hmGrid').style.display='none';
+  document.getElementById('recAnalysisWrap').style.display='none';
   log('hmDot','hmLog','conectando con Microsoft Clarity...');
+  const dateRange=document.getElementById('hmRange').value;
+  const page=document.getElementById('hmPage').value||'/';
   try {
-    const range=document.getElementById('hmRange').value;
-    const page=document.getElementById('hmPage').value||'/';
-    const data=await post('/api/heatmap',{dateRange:range,page});
+    const data=await post('/api/heatmap',{dateRange,page});
     if(data.error) throw new Error(data.error);
     document.getElementById('h1').textContent=fmt(data.totalClicks);
     document.getElementById('h2').textContent=(data.avgScrollDepth||0)+'%';
     document.getElementById('h3').textContent=fmt(data.sessions?.total);
     const dur=data.sessions?.avgDuration||0;
-    document.getElementById('h4').textContent=dur>=60?Math.floor(dur/60)+'m '+( dur%60)+'s':dur+'s';
+    document.getElementById('h4').textContent=dur>=60?`${Math.floor(dur/60)}m ${dur%60}s`:`${dur}s`;
     drawHeatmap(data.topClickAreas||[]);
     renderScrollDepth(data.scrollData||[]);
     renderClicksTable(data.topClickAreas||[]);
     document.getElementById('hmGrid').style.display='grid';
-    log('hmDot','hmLog',`mapa de calor cargado · ${page} · ${range}`,false);
-  } catch(e){ log('hmDot','hmLog','error: '+e.message,false); }
+    document.getElementById('recAnalysisWrap').style.display='block';
+    document.getElementById('hmAnalyzeBtn').style.display='';
+    log('hmDot','hmLog',`mapa cargado · ${page} · ${dateRange} días · Clarity`,false);
+    log('recDot','recLog','presioná "✦ analizar grabaciones" para obtener insights IA',false);
+  } catch(e){log('hmDot','hmLog','error: '+e.message,false);}
   btn.disabled=false;
 }
 
 function drawHeatmap(areas) {
   const canvas=document.getElementById('heatmapCanvas');
-  const W=canvas.parentElement.clientWidth||500, H=420;
+  const W=canvas.parentElement.clientWidth||480, H=380;
   canvas.width=W;canvas.height=H;
   const ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,W,H);
-
-  // page mockup bg
   ctx.fillStyle='#1a1a1a';ctx.fillRect(0,0,W,H);
-  // sections
-  const sections=[{y:0,h:.1,c:'#222',l:'Header'},{y:.1,h:.2,c:'#1d1d1d',l:'Hero Banner'},{y:.3,h:.35,c:'#191919',l:'Grilla Productos'},{y:.65,h:.15,c:'#1c1c1c',l:'Destacados'},{y:.8,h:.2,c:'#181818',l:'Footer'}];
-  sections.forEach(s=>{
+  // page sections mockup
+  [{y:0,h:.09,c:'#212121',l:'Header'},{y:.09,h:.22,c:'#1d1d1d',l:'Hero Banner'},{y:.31,h:.36,c:'#191919',l:'Grilla de Productos'},{y:.67,h:.15,c:'#1c1c1c',l:'Recomendados'},{y:.82,h:.18,c:'#181818',l:'Footer'}]
+  .forEach(s=>{
     ctx.fillStyle=s.c;ctx.fillRect(0,s.y*H,W,s.h*H);
-    ctx.fillStyle='#333';ctx.font='11px IBM Plex Mono';ctx.fillText(s.l,12,s.y*H+16);
-    ctx.strokeStyle='#252525';ctx.lineWidth=1;ctx.strokeRect(0,s.y*H,W,s.h*H);
+    ctx.fillStyle='#2e2e2e';ctx.font='10px IBM Plex Mono';ctx.fillText(s.l,10,s.y*H+14);
+    ctx.strokeStyle='#222';ctx.lineWidth=0.5;ctx.strokeRect(0,s.y*H,W,s.h*H);
   });
-
   // heat spots
   areas.forEach(a=>{
     const cx=(a.x/100)*W, cy=(a.y/100)*H;
-    const r=Math.max(30,Math.min(80,(a.percentage/30)*80));
-    const intensity=Math.min(1,a.percentage/30);
+    const r=Math.max(28,Math.min(75,(a.percentage/25)*70));
+    const intensity=Math.min(1,a.percentage/25);
     const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
-    if(intensity>0.6){
-      grad.addColorStop(0,`rgba(255,60,0,${0.7*intensity})`);
-      grad.addColorStop(0.4,`rgba(255,140,0,${0.4*intensity})`);
-      grad.addColorStop(1,'rgba(255,140,0,0)');
-    } else if(intensity>0.3){
-      grad.addColorStop(0,`rgba(255,200,0,${0.6*intensity})`);
-      grad.addColorStop(0.5,`rgba(0,200,100,${0.2*intensity})`);
-      grad.addColorStop(1,'rgba(0,200,100,0)');
-    } else {
-      grad.addColorStop(0,`rgba(0,100,255,${0.5*intensity})`);
-      grad.addColorStop(1,'rgba(0,100,255,0)');
-    }
+    if(intensity>0.55){grad.addColorStop(0,`rgba(255,55,0,${0.75*intensity})`);grad.addColorStop(0.4,`rgba(255,130,0,${0.4*intensity})`);grad.addColorStop(1,'rgba(255,130,0,0)');}
+    else if(intensity>0.25){grad.addColorStop(0,`rgba(255,195,0,${0.65*intensity})`);grad.addColorStop(0.5,`rgba(0,195,90,${0.2*intensity})`);grad.addColorStop(1,'rgba(0,195,90,0)');}
+    else{grad.addColorStop(0,`rgba(0,100,255,${0.55*intensity})`);grad.addColorStop(1,'rgba(0,100,255,0)');}
     ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=grad;ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,0.7)';ctx.font='bold 10px IBM Plex Mono';
-    ctx.fillText(a.percentage.toFixed(1)+'%',cx-14,cy+4);
+    if(a.percentage>3){ctx.fillStyle='rgba(255,255,255,0.75)';ctx.font='bold 9px IBM Plex Mono';ctx.fillText(a.percentage.toFixed(1)+'%',cx-12,cy+4);}
   });
 }
 
-function renderScrollDepth(scrollData) {
-  const el=document.getElementById('scrollDepthBars');
-  el.innerHTML=scrollData.map(s=>`
+function renderScrollDepth(sd) {
+  document.getElementById('scrollDepthBars').innerHTML=sd.map(s=>`
     <div class="scroll-row">
-      <span class="scroll-pct-label">${s.depth}%</span>
-      <div class="scroll-bar-bg">
-        <div class="scroll-bar-fill" style="width:${s.pct}%">
-          <span>${s.pct}%</span>
-        </div>
-      </div>
+      <span class="scroll-label">${s.depth}%</span>
+      <div class="scroll-bg"><div class="scroll-fill" style="width:${s.pct}%"><span>${s.pct}%</span></div></div>
     </div>`).join('');
 }
 
@@ -609,9 +650,65 @@ function renderClicksTable(areas) {
   document.getElementById('clicksTable').innerHTML=sorted.map(a=>`
     <div class="click-row">
       <span class="click-zone">${a.zone}</span>
-      <span class="click-count">${fmt(a.clicks)}</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--muted)">${fmt(a.clicks)}</span>
       <span class="click-pct">${a.percentage.toFixed(1)}%</span>
     </div>`).join('');
+}
+
+// ── RECORDINGS ANALYSIS IA ────────────────────────────────────────────────────
+async function runRecordingsAnalysis() {
+  const btn=document.getElementById('hmAnalyzeBtn');btn.disabled=true;
+  log('recDot','recLog','analizando grabaciones con IA · puede tardar 15-30 segundos...');
+  const dateRange=document.getElementById('hmRange').value;
+  const page=document.getElementById('hmPage').value||'/';
+  const result=document.getElementById('recResult');
+  showLoading(result, 6);
+  try {
+    const data=await post('/api/recordings-analysis',{dateRange,page,pageType:'product page',goal:'add to cart'});
+    if(data.error) throw new Error(data.error);
+    result.innerHTML=`<div class="ai-result"><div class="ai-content">${formatAIText(data.analysis)}</div></div>`;
+    log('recDot','recLog','análisis IA completado · Microsoft Clarity + Claude',false);
+  } catch(e){
+    result.innerHTML=`<div class="log-bar"><span class="pulse idle"></span>error: ${e.message}</div>`;
+    log('recDot','recLog','error en análisis',false);
+  }
+  btn.disabled=false;
+}
+
+// ── PDP AUDIT ─────────────────────────────────────────────────────────────────
+async function runPDPAudit() {
+  const url=document.getElementById('pdpUrl').value.trim();
+  const productName=document.getElementById('pdpName').value.trim();
+  if(!url&&!productName){log('pdpDot','pdpLog','⚠ ingresá la URL o nombre del producto',false);return;}
+  const btn=document.getElementById('pdpBtn');btn.disabled=true;
+  log('pdpDot','pdpLog','auditando producto con IA · puede tardar 15-25 segundos...');
+  const result=document.getElementById('pdpResult');
+  showLoading(result, 8);
+  try {
+    const data=await post('/api/pdp-audit',{
+      url, productName,
+      category:document.getElementById('pdpCategory').value,
+      pricePoint:document.getElementById('pdpPrice').value,
+      currentCVR:document.getElementById('pdpCVR').value
+    });
+    if(data.error) throw new Error(data.error);
+    result.innerHTML=`<div class="ai-result"><div class="ai-content">${formatAIText(data.analysis)}</div></div>`;
+    log('pdpDot','pdpLog','auditoría completada · Claude CRO Analyst',false);
+  } catch(e){
+    result.innerHTML=`<div class="log-bar"><span class="pulse idle"></span>error: ${e.message}</div>`;
+    log('pdpDot','pdpLog','error en auditoría',false);
+  }
+  btn.disabled=false;
+}
+
+// ── FORMAT AI TEXT ────────────────────────────────────────────────────────────
+function formatAIText(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^#{1,3} (.+)$/gm,'<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^---+$/gm,'<hr>')
+    .replace(/\n/g,'<br>');
 }
 </script>
 </body>
