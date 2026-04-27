@@ -285,3 +285,272 @@ app.listen(PORT, () => {
   console.log(`  Clarity: ${CLARITY_PROJECT_ID || '⚠ no configurado'}`);
   console.log(`  Claude: ${ANTHROPIC_API_KEY ? '✓' : '⚠ no configurado'}`);
 });
+
+// ── HEATMAP PATTERN DECODER ───────────────────────────────────────────────────
+app.post('/api/heatmap-decode', async (req, res) => {
+  const { heatmapData, pageType = 'product page', pageGoal = 'add to cart', period = '7' } = req.body;
+  try {
+    const analysis = await callClaude([{ role: 'user', content: `You are an expert CRO analyst specializing in heatmap analysis for e-commerce.
+
+Decode this heatmap data and produce a full HEATMAP PATTERN DECODER analysis.
+
+Page type: ${pageType}
+Page goal: ${pageGoal}
+Period: last ${period} days
+
+Heatmap data:
+${JSON.stringify(heatmapData, null, 2)}
+
+Produce this exact report:
+
+## HEATMAP ANALYSIS
+
+**Page**: ${pageType} | **Goal**: ${pageGoal} | **Sessions**: ${heatmapData?.sessions?.total || 'N/A'}
+
+---
+
+### ATTENTION FLOW ANALYSIS
+Primary Attention Areas (top 3 with % attention, element type, appropriate level ✅/❌, impact on conversion)
+Ignored Areas (2-3 elements users miss, importance, why ignored, CVR impact)
+Attention Flow Assessment (logical or scattered?)
+
+---
+
+### CLICK PATTERN ANALYSIS
+High-Click Areas with insights
+Rage Clicks: location / why / impact / fix
+Dead Clicks: location / opportunity / fix
+Missing Clicks: element / why ignored / fix
+
+---
+
+### SCROLL DEPTH ANALYSIS
+Average fold line + reach %
+Drop-off points: at X% — what's there — why users drop — what they miss — fix
+Content above fold assessment (critical info ✅/❌, value prop ✅/❌, CTA ✅/❌)
+
+---
+
+### BEHAVIORAL HYPOTHESES
+3 hypotheses: What we see / What it means / Why it's happening / CVR impact / Confidence level
+
+---
+
+### CONVERSION BLOCKERS
+Critical (fix immediately): pattern / blocker type / users affected % / revenue impact / fix
+High-impact (fix this week): 3 blockers brief
+
+---
+
+### CONVERSION OPPORTUNITIES
+Underutilized high-attention areas (2): current content / opportunity / expected lift %
+Wasted interactions + attention optimization moves
+
+---
+
+### TEST IDEAS
+3 tests: heatmap insight / hypothesis / control / variant / success metric / expected impact / priority
+
+---
+
+### QUICK FIXES (No Testing Needed)
+3 fixes: pattern / issue / solution / time / impact
+
+---
+
+### ATTENTION FLOW OPTIMIZATION
+Ideal flow → Current flow → Misalignment analysis → 3 recommended changes
+
+---
+
+### HEATMAP INSIGHTS SUMMARY
+3 key behavioral patterns | Most surprising finding | Biggest conversion opportunity | Estimated total impact %
+
+Be specific with data. Tie everything to revenue. Reference psychology (F-pattern, Z-pattern, attention clusters, rage clicks, ghost clicks).` }],
+    'You are an expert CRO heatmap analyst. Always be specific, data-driven, tie to revenue. Reference behavioral psychology and e-commerce patterns.', 2500);
+    res.json({ analysis });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── MOBILE FRICTION DIAGNOSTIC ────────────────────────────────────────────────
+app.post('/api/mobile-diagnostic', async (req, res) => {
+  const { url, pageType = 'product page', mobileCVR, desktopCVR, mobileTraffic, complaints = '' } = req.body;
+  if (!url) return res.status(400).json({ error: 'Ingresá la URL a diagnosticar' });
+  try {
+    const analysis = await callClaude([{ role: 'user', content: `You are an expert CRO analyst specializing in mobile commerce optimization.
+
+Run a full MOBILE FRICTION DIAGNOSTIC on this page:
+- URL: ${url}
+- Page type: ${pageType}
+- Mobile CVR: ${mobileCVR || 'unknown'}
+- Desktop CVR: ${desktopCVR || 'unknown'}
+- Mobile traffic: ${mobileTraffic || 'unknown'}%
+- User complaints: ${complaints || 'none provided'}
+
+Produce this exact 15-point diagnostic report:
+
+## MOBILE FRICTION DIAGNOSTIC
+
+**Page**: ${url} | **Type**: ${pageType}
+**Mobile CVR**: ${mobileCVR || 'unknown'} | **Desktop CVR**: ${desktopCVR || 'unknown'} | **Mobile Traffic**: ${mobileTraffic || 'unknown'}%
+
+---
+
+### 15-POINT DIAGNOSTIC RESULTS
+
+Score each with ✅ Pass / ⚠️ Issue / ❌ Critical + what we see + impact (High/Medium/Low) + specific fix:
+
+1. Above-the-Fold Value Clarity
+2. Tap Target Sizes (min 44x44px)
+3. Form Field Friction
+4. Image Loading Speed
+5. CTA Visibility
+6. Text Readability (min 16px)
+7. Horizontal Scrolling
+8. Pop-up Obstruction
+9. Navigation Complexity
+10. Checkout Field Count
+11. Payment Method Clarity
+12. Trust Signal Visibility
+13. Product Image Zoom
+14. Shipping Info Accessibility
+15. Back Button Behavior
+
+---
+
+### FRICTION SUMMARY
+Overall Mobile Health Score: X/15 passing
+Critical Issues (fix immediately) with estimated revenue impact
+High-Priority Issues (fix this week) with estimated revenue impact
+Medium-Priority Issues (fix this month)
+
+---
+
+### REVENUE IMPACT ANALYSIS
+Estimated mobile conversion loss %
+Calculation: current CVR → potential CVR → lift % → monthly opportunity €
+Biggest revenue leak (specific friction point)
+
+---
+
+### QUICK WINS (Implement Today)
+3 fixes: what to do / time required / expected mobile CVR lift % / why it works
+
+---
+
+### MOBILE-SPECIFIC TEST IDEAS
+3 tests: hypothesis / what to test / expected lift % / test duration
+
+---
+
+### MOBILE VS DESKTOP GAP ANALYSIS
+Current performance + why mobile underperforms (3 specific reasons) + closing the gap estimate
+
+---
+
+### IMPLEMENTATION ROADMAP
+Week 1 (critical) / Week 2-3 (high-priority) / Week 4+ (medium + optimization)
+Expected cumulative impact: +X% mobile CVR within 30 days
+
+Be specific, mobile-first thinking, thumb-zone optimization, revenue-focused. Reference: tap targets ≥44px, text ≥16px, load <3s, max 4 checkout fields.` }],
+    'Expert CRO analyst for mobile e-commerce. Mobile-first, thumb-first, revenue-focused. Always quantify impact.', 2500);
+    res.json({ analysis });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── COMPETITOR TEARDOWN ───────────────────────────────────────────────────────
+app.post('/api/competitor-teardown', async (req, res) => {
+  const { competitorUrl, competitorName, myBrand = 'sarkanyar', pageToAnalyze = 'full site', category } = req.body;
+  if (!competitorUrl && !competitorName) return res.status(400).json({ error: 'Ingresá URL o nombre del competidor' });
+  try {
+    const analysis = await callClaude([{ role: 'user', content: `You are an expert CRO analyst specializing in competitive analysis for e-commerce.
+
+Run a full COMPETITOR CONVERSION TEARDOWN:
+- Competitor: ${competitorName || competitorUrl}
+- URL: ${competitorUrl || 'N/A'}
+- Category: ${category || 'e-commerce fashion/footwear'}
+- Page analyzed: ${pageToAnalyze}
+- Client brand (for comparison): ${myBrand}
+
+Produce this exact analysis:
+
+## COMPETITOR CONVERSION TEARDOWN
+
+**Competitor**: ${competitorName || competitorUrl}
+**URL**: ${competitorUrl || 'N/A'}
+**Category**: ${category || 'e-commerce'}
+**vs**: ${myBrand}
+
+---
+
+### POSITIONING STRATEGY
+Value Proposition (one sentence) | Target Audience | Brand Positioning (premium/mid/budget + angle)
+Key Differentiators (3) | Messaging Hierarchy (3 levels) | Positioning Grade A-F + why
+
+---
+
+### CONVERSION TACTICS INVENTORY
+For each category score ✅/❌ each tactic + effectiveness (High/Medium/Low) + why:
+- Urgency Tactics: countdown timers / limited time / sale badges / seasonal
+- Scarcity Tactics: low stock / limited edition / X viewing / sold out
+- Social Proof: reviews / ratings / UGC / photos / testimonials / social / X customers
+- Trust Signals: money-back / free returns / secure badges / shipping / customer service / certs
+- Other Psychological Triggers (any unique tactics)
+
+---
+
+### USER JOURNEY ANALYSIS
+Homepage→PDP: entry strength / navigation / product discovery / key insight
+PDP→Cart: value prop /10 / CTA /10 / friction points / key insight
+Cart→Checkout: experience / friction / abandonment risks / key insight
+Overall Journey Grade A-F
+
+---
+
+### OBJECTION HANDLING
+How they address: price justification / trust / returns / shipping / quality
+Grade each High/Medium/Low effectiveness | Overall Grade A-F
+
+---
+
+### WHAT THEY DO WELL (Threats to ${myBrand})
+3 strengths: what they do / why it works (psychology) / your response
+
+---
+
+### WHAT THEY DO POORLY (Opportunities for ${myBrand})
+3 weaknesses: what's wrong / likely CVR cost / your advantage
+
+---
+
+### WHAT THEY'RE MISSING (Your Differentiation Angles)
+3 gaps: what's missing / customer need unmet / your move
+
+---
+
+### TACTICAL RECOMMENDATIONS
+Steal These Tactics (3): tactic / why / how to implement
+Exploit These Gaps (3): their weakness / your move
+Avoid These Mistakes (2): what not to copy + why
+
+---
+
+### COMPETITIVE POSITIONING MATRIX
+Where they win (2 dimensions) | Where ${myBrand} can win (2 dimensions) | Neutral ground
+
+---
+
+### OVERALL COMPETITIVE ASSESSMENT
+Conversion Maturity Score X/100 | Biggest Threat | Biggest Opportunity
+Recommended Strategy: Differentiate/Match & Beat/Niche Down + explanation
+
+---
+
+### IMMEDIATE ACTION ITEMS
+3 actions (Steal/Exploit/Differentiate): what / why / expected impact
+
+Be analytical, honest, psychology-driven. Reference urgency/scarcity/social proof/trust as lens. Focus on actionable competitive intelligence.` }],
+    'Expert CRO competitive analyst. Honest, analytical, psychology-driven. Focus on exploitable gaps and actionable tactics.', 2500);
+    res.json({ analysis });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
