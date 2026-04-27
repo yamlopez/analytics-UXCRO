@@ -412,14 +412,22 @@ function fmt(n){return(n||0).toLocaleString('es-AR')}
 async function post(url,body){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.json()}
 function shimmer(el,n=5){el.innerHTML=Array(n).fill('<div class="shimmer"></div>').join('')}
 
-async function checkStatus(){
-  try{
-    const s=await fetch('/api/status').then(r=>r.json());
-    const dot=ok=>`<span style="color:${ok?'var(--good)':'var(--danger)'}">${ok?'●':'●'}</span>`;
-    document.getElementById('stVtex').innerHTML=dot(s.vtex)+` VTEX ${s.vtexAccount||''}`;
-    document.getElementById('stClarity').innerHTML=dot(s.clarity)+' Clarity';
-    document.getElementById('stClaude').innerHTML=dot(s.claude)+' Claude';
-  }catch(e){}
+async function checkStatus(retries=5, delay=3000){
+  for(let i=0;i<retries;i++){
+    try{
+      const s=await fetch('/api/status').then(r=>r.json());
+      const dot=ok=>`<span style="color:${ok?'var(--good)':'var(--danger)'}">${ok?'●':'●'}</span>`;
+      document.getElementById('stVtex').innerHTML=dot(s.vtex)+` VTEX ${s.vtexAccount||''}`;
+      document.getElementById('stClarity').innerHTML=dot(s.clarity)+' Clarity';
+      document.getElementById('stClaude').innerHTML=dot(s.claude)+' Claude';
+      return;
+    }catch(e){
+      if(i<retries-1){
+        document.getElementById('stVtex').innerHTML='<span style="color:var(--warn)">●</span> conectando...';
+        await new Promise(r=>setTimeout(r,delay));
+      }
+    }
+  }
 }
 checkStatus();
 
