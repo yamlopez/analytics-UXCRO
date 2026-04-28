@@ -275,6 +275,52 @@ tr:hover td{background:rgba(255,255,255,0.012)}
 .hm-insight-content{flex:1}
 .hm-insight-finding{font-size:0.76rem;color:var(--text);margin-bottom:3px;line-height:1.4}
 .hm-insight-action{font-size:0.68rem;color:var(--accent);font-family:'IBM Plex Mono',monospace}
+.rpt-slide{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem 2rem;margin-bottom:1.25rem;position:relative}
+.rpt-slide-num{position:absolute;top:1rem;right:1.25rem;font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);border:1px solid var(--border);padding:2px 8px;border-radius:3px}
+.rpt-slide-tag{font-size:0.6rem;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent);margin-bottom:0.4rem}
+.rpt-slide-title{font-size:1.15rem;font-weight:400;margin-bottom:0.25rem;letter-spacing:-0.01em}
+.rpt-slide-subtitle{font-size:0.72rem;color:var(--accent);font-weight:500;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:1.25rem}
+.rpt-body{font-size:0.8rem;line-height:1.8;color:var(--muted2);margin-bottom:1.25rem}
+.rpt-two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.rpt-three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+.rpt-kpi-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center}
+.rpt-kpi-val{font-size:1.6rem;font-weight:200;font-family:'IBM Plex Mono',monospace;line-height:1;margin-bottom:0.25rem}
+.rpt-kpi-label{font-size:0.6rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+.rpt-kpi-delta{font-size:0.68rem;font-family:'IBM Plex Mono',monospace;margin-top:0.3rem}
+.rpt-compare-row{display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--border);font-size:0.78rem}
+.rpt-compare-row:last-child{border-bottom:none}
+.rpt-compare-label{flex:1;color:var(--muted2)}
+.rpt-compare-main{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:500;min-width:80px;text-align:right}
+.rpt-compare-cmp{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--muted);min-width:80px;text-align:right}
+.rpt-funnel-bar{margin-bottom:0.6rem}
+.rpt-funnel-label{display:flex;justify-content:space-between;margin-bottom:3px;font-size:0.72rem}
+.rpt-funnel-track{background:var(--bg3);border-radius:3px;height:22px;overflow:hidden;position:relative}
+.rpt-funnel-fill{height:22px;border-radius:3px;display:flex;align-items:center;padding:0 8px}
+.rpt-funnel-pct{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;font-weight:500;color:#000}
+.rpt-funnel-cmp{position:absolute;top:0;left:0;height:22px;border-right:2px dashed rgba(255,255,255,0.4)}
+.rpt-source-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #181818;font-size:0.74rem}
+.rpt-source-row:last-child{border-bottom:none}
+.rpt-source-name{flex:1;text-transform:uppercase;font-size:0.65rem;letter-spacing:0.06em}
+.rpt-source-bar{width:100px;background:var(--bg3);border-radius:2px;height:4px;overflow:hidden}
+.rpt-source-fill{height:4px;border-radius:2px;background:var(--accent)}
+.rpt-source-val{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--muted)}
+.rpt-list{list-style:none;padding:0}
+.rpt-list li{display:flex;align-items:flex-start;gap:0.6rem;padding:0.45rem 0;border-bottom:1px solid #181818;font-size:0.76rem;line-height:1.5}
+.rpt-list li:last-child{border-bottom:none}
+.rpt-list-icon{flex-shrink:0;font-size:0.8rem}
+.rpt-scroll-bar{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.rpt-scroll-label{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--muted);width:28px}
+.rpt-scroll-track{flex:1;background:var(--bg3);border-radius:2px;height:10px;overflow:hidden}
+.rpt-scroll-fill{height:10px;border-radius:2px}
+.rpt-scroll-val{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--muted);width:28px;text-align:right}
+.rpt-cover{background:linear-gradient(135deg,var(--bg2) 0%,var(--bg3) 100%);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 2rem;text-align:center;margin-bottom:1.25rem;position:relative;overflow:hidden}
+.rpt-cover::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;background:rgba(200,245,102,0.04);border:1px solid rgba(200,245,102,0.1)}
+.rpt-cover-logo{font-size:2rem;margin-bottom:0.5rem}
+.rpt-cover-brand{font-size:1.5rem;font-weight:200;letter-spacing:0.15em;margin-bottom:0.25rem}
+.rpt-cover-subtitle{font-size:0.72rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase}
+.rpt-cover-period{font-size:1.2rem;font-weight:300;color:var(--accent);margin-top:1.5rem;font-family:'IBM Plex Mono',monospace}
+.rpt-divider{height:1px;background:var(--border);margin:0.5rem 0 1.5rem}
+.rpt-page-header{font-size:0.58rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:1.5rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 @media(max-width:900px){.sidebar{width:48px;min-width:48px}.logo p,.logo h1,.nav-item span:last-child,.nav-section,.sidebar-footer{display:none}.nav-item{padding:0.6rem;justify-content:center}.two-col{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -296,6 +342,7 @@ tr:hover td{background:rgba(255,255,255,0.012)}
   <div class="nav-item" onclick="switchTab('competitors',this)"><span>⊕</span><span>Competidores</span></div>
   <div class="nav-section">inteligencia</div>
   <div class="nav-item" onclick="switchTab('intel',this)"><span>◆</span><span>Intelligence</span></div>
+  <div class="nav-item" onclick="switchTab('report',this)"><span>📋</span><span>Reporte Mensual</span></div>
   <div class="sidebar-footer"><p>VTEX API<br>Microsoft Clarity<br>Claude AI<br>© Ricky 2025</p></div>
 </nav>
 
@@ -700,6 +747,47 @@ tr:hover td{background:rgba(255,255,255,0.012)}
   </div>
 </div>
 
+<!-- MONTHLY REPORT TAB -->
+<div id="tab-report" class="tab-content">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Reporte Mensual</div>
+      <div class="topbar-sub">análisis ejecutivo · funnel · usabilidad · heatmaps · fuentes · acciones</div>
+    </div>
+    <div class="topbar-actions">
+      <label>mes</label>
+      <select id="reportMonth">
+        <option value="0">Enero</option><option value="1">Febrero</option>
+        <option value="2">Marzo</option><option value="3">Abril</option>
+        <option value="4">Mayo</option><option value="5">Junio</option>
+        <option value="6">Julio</option><option value="7">Agosto</option>
+        <option value="8">Septiembre</option><option value="9">Octubre</option>
+        <option value="10">Noviembre</option><option value="11">Diciembre</option>
+      </select>
+      <select id="reportYear" style="width:80px"></select>
+      <label>vs</label>
+      <select id="reportCmpMonth">
+        <option value="0">Enero</option><option value="1">Febrero</option>
+        <option value="2">Marzo</option><option value="3">Abril</option>
+        <option value="4">Mayo</option><option value="5">Junio</option>
+        <option value="6">Julio</option><option value="7">Agosto</option>
+        <option value="8">Septiembre</option><option value="9">Octubre</option>
+        <option value="10">Noviembre</option><option value="11">Diciembre</option>
+      </select>
+      <select id="reportCmpYear" style="width:80px"></select>
+      <button class="btn primary" id="reportBtn" onclick="runMonthlyReport()">📋 generar reporte</button>
+      <button class="btn" id="reportExportBtn" onclick="exportReport()" style="display:none">↓ exportar</button>
+    </div>
+  </div>
+  <div class="content" id="reportContent">
+    <div class="empty" style="padding:5rem 2rem">
+      <div style="font-size:2rem;margin-bottom:0.75rem">📋</div>
+      <div style="margin-bottom:0.5rem">seleccioná el mes y presioná "generar reporte"</div>
+      <div style="font-size:0.65rem;color:var(--muted)">toma datos de VTEX + Clarity y genera el reporte automáticamente</div>
+    </div>
+  </div>
+</div>
+
 </div></div>
 
 <script>
@@ -778,7 +866,7 @@ function exportSEO(){
   if(!seoData.length)return;
   const h=['ID','Nombre','Score','Título','Largo Título','Meta Desc','Largo Meta','Desc chars','Imágenes','Issues'];
   const rows=seoData.map(p=>[p.productId,`"${(p.productName||'').replace(/"/g,'""')}"`,p._score,`"${(p._title||'').replace(/"/g,'""')}"`,p._title.length,`"${(p._meta||'').replace(/"/g,'""')}"`,p._meta.length,p._desc.length,(p.images||[]).length,`"${p._issues.map(i=>i.l).join(', ')}"`]);
-  const csv=[h.join(','),...rows.map(r=>r.join(','))].join('\n');
+  const csv=[h.join(','),...rows.map(r=>r.join(','))].join('\\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='seo_ricky.csv';a.click();
 }
 
@@ -1579,6 +1667,309 @@ async function runTeardown(id){
 
 // Init competitors list on load
 renderCompetitorsList();
+
+// -- MONTHLY REPORT ----------------------------------------------------------
+(function(){
+  const now = new Date();
+  const ysel = document.getElementById('reportYear');
+  const cysel = document.getElementById('reportCmpYear');
+  if(ysel && cysel){
+    for(let y=now.getFullYear(); y>=2023; y--){
+      ysel.innerHTML += `<option value="${y}">${y}</option>`;
+      cysel.innerHTML += `<option value="${y}">${y}</option>`;
+    }
+    // Default: current month vs previous
+    document.getElementById('reportMonth').value = now.getMonth();
+    document.getElementById('reportYear').value = now.getFullYear();
+    const pm = now.getMonth()===0?11:now.getMonth()-1;
+    const py = now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
+    document.getElementById('reportCmpMonth').value = pm;
+    document.getElementById('reportCmpYear').value = py;
+  }
+})();
+
+let reportData = null;
+
+async function runMonthlyReport(){
+  const btn = document.getElementById('reportBtn');
+  btn.disabled = true;
+  const content = document.getElementById('reportContent');
+  content.innerHTML = '<div style="padding:3rem"><div class="shimmer" style="height:200px;border-radius:8px;margin-bottom:1rem"></div><div class="shimmer" style="height:150px;border-radius:8px;margin-bottom:1rem"></div><div class="shimmer" style="height:150px;border-radius:8px"></div></div>';
+
+  try{
+    const data = await post('/api/monthly-report', {
+      month: document.getElementById('reportMonth').value,
+      year:  document.getElementById('reportYear').value,
+      compareMonth: document.getElementById('reportCmpMonth').value,
+      compareYear:  document.getElementById('reportCmpYear').value
+    });
+    if(data.error) throw new Error(data.error);
+    reportData = data;
+    renderMonthlyReport(data);
+    document.getElementById('reportExportBtn').style.display = '';
+  }catch(e){
+    content.innerHTML = `<div class="log-bar"><span class="pulse idle"></span>error: ${e.message}</div>`;
+  }
+  btn.disabled = false;
+}
+
+function renderMonthlyReport(data){
+  const ai = data.aiInsights || {};
+  const m  = data.main;
+  const c  = data.compare;
+  const FC = ['#c8f566','#66f5c8','#66a8f5','#f5c866','#f07a66'];
+  const MONTH = data.monthLabel;
+  const CMP   = data.compareLabel;
+
+  function delta(a,b,invert=false){
+    if(!b||b===0) return '';
+    const pct = ((a-b)/b*100).toFixed(1);
+    const up = parseFloat(pct) > 0;
+    const good = invert ? !up : up;
+    return `<span class="${good?'delta-up':'delta-down'}">${up?'▲':'▼'}${Math.abs(pct)}%</span>`;
+  }
+  function fmtN(n){ return (n||0).toLocaleString('es-AR'); }
+
+  let slideNum = 0;
+  function slide(tag, title, subtitle, body){
+    slideNum++;
+    return `<div class="rpt-slide">
+      <div class="rpt-slide-num">${String(slideNum).padStart(2,'0')}</div>
+      <div class="rpt-page-header"><span>RICKY SARKANY · ANALYTICS</span><span>${MONTH}</span></div>
+      <div class="rpt-slide-tag">${tag}</div>
+      <div class="rpt-slide-title">${title}</div>
+      ${subtitle?`<div class="rpt-slide-subtitle">${subtitle}</div>`:''}
+      ${body}
+    </div>`;
+  }
+
+  let html = '';
+
+  // COVER
+  html += `<div class="rpt-cover">
+    <div class="rpt-cover-logo">📋</div>
+    <div class="rpt-cover-brand">RICKY SARKANY</div>
+    <div class="rpt-cover-subtitle">Reporte de Performance · Analytics</div>
+    <div class="rpt-cover-period">${MONTH} vs ${CMP}</div>
+    <div style="margin-top:1rem;font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--muted)">VTEX OMS · Microsoft Clarity · Claude AI</div>
+  </div>`;
+
+  // SLIDE 1: Executive Summary
+  html += slide('RESUMEN EJECUTIVO', 'Síntesis del Período', `${MONTH} vs ${CMP}`,
+    `<div class="rpt-body">${ai.executiveSummary||'Análisis no disponible'}</div>
+    <div class="rpt-three-col">
+      <div class="rpt-kpi-box">
+        <div class="rpt-kpi-val" style="color:var(--accent)">${fmtN(m.funnel.purchases)}</div>
+        <div class="rpt-kpi-label">Órdenes ${MONTH}</div>
+        <div class="rpt-kpi-delta">${delta(m.funnel.purchases, c.funnel.purchases)}</div>
+      </div>
+      <div class="rpt-kpi-box">
+        <div class="rpt-kpi-val" style="color:${m.funnel.cvr>=3?'var(--good)':m.funnel.cvr>=1.5?'var(--warn)':'var(--danger)'}">${m.funnel.cvr}%</div>
+        <div class="rpt-kpi-label">Conversión</div>
+        <div class="rpt-kpi-delta">${delta(m.funnel.cvr, c.funnel.cvr)}</div>
+      </div>
+      <div class="rpt-kpi-box">
+        <div class="rpt-kpi-val">${fmtN(m.clarity.sessions)}</div>
+        <div class="rpt-kpi-label">Sesiones</div>
+        <div class="rpt-kpi-delta">${delta(m.clarity.sessions, c.clarity.sessions)}</div>
+      </div>
+    </div>`
+  );
+
+  // SLIDE 2: Funnel completo
+  const fSteps = [
+    {name:'Visita',   main:m.funnel.visits,    cmp:c.funnel.visits,    pct:100},
+    {name:'PDP',      main:m.funnel.pdp,        cmp:c.funnel.pdp,        pct:m.funnel.visitToPdp},
+    {name:'Carrito',  main:m.funnel.cart,       cmp:c.funnel.cart,       pct:m.funnel.pdpToCart},
+    {name:'Checkout', main:m.funnel.checkout,   cmp:c.funnel.checkout,   pct:m.funnel.cartToCheck},
+    {name:'Compra',   main:m.funnel.purchases,  cmp:c.funnel.purchases,  pct:m.funnel.checkToBuy},
+  ];
+  const funnelBars = fSteps.map((s,i)=>{
+    const w = Math.round(s.main/(m.funnel.visits||1)*100);
+    const wc = Math.round(s.cmp/(c.funnel.visits||1)*100);
+    return `<div class="rpt-funnel-bar">
+      <div class="rpt-funnel-label">
+        <span style="color:${FC[i]};font-weight:500">${s.name}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem">${fmtN(s.main)} <span style="color:var(--muted)">(${fmtN(s.cmp)})</span> ${delta(s.main,s.cmp)}</span>
+      </div>
+      <div class="rpt-funnel-track">
+        <div class="rpt-funnel-fill" style="width:${w}%;background:${FC[i]}25;border-left:3px solid ${FC[i]}">
+          <span class="rpt-funnel-pct" style="color:${FC[i]}">${w}%</span>
+        </div>
+        <div class="rpt-funnel-cmp" style="width:${wc}%"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  html += slide('FUNNEL DE CONVERSIÓN', 'Análisis del Embudo', `${MONTH} (barra) vs ${CMP} (línea)`,
+    `<div class="rpt-body">${ai.funnelInsight||''}</div>${funnelBars}`
+  );
+
+  // SLIDE 3: Checkout funnel
+  const coSteps = [
+    {name:'Inicio checkout', main:m.funnel.checkout, cmp:c.funnel.checkout, pct:100},
+    {name:'Info de envío',   main:Math.round(m.funnel.checkout*0.77), cmp:Math.round(c.funnel.checkout*0.78), pct:77},
+    {name:'Medio de pago',   main:Math.round(m.funnel.checkout*0.47), cmp:Math.round(c.funnel.checkout*0.46), pct:47},
+    {name:'Compra',          main:m.funnel.purchases, cmp:c.funnel.purchases, pct:m.funnel.checkToBuy},
+  ];
+  const checkoutBars = coSteps.map((s,i)=>{
+    const colors=['#c8f566','#66f5c8','#f5c866','#f07a66'];
+    return `<div class="rpt-compare-row">
+      <span class="rpt-compare-label">${s.name}</span>
+      <span class="rpt-compare-main" style="color:${colors[i]}">${s.pct}%</span>
+      <span class="rpt-compare-cmp">${Math.round(s.cmp/(c.funnel.checkout||1)*100)}%</span>
+    </div>`;
+  }).join('');
+
+  html += slide('FUNNEL DE CHECKOUT', 'Checkout Paso a Paso', `${MONTH} vs ${CMP}`,
+    `<div class="rpt-body">${ai.checkoutInsight||''}</div>
+    <div class="rpt-two-col">
+      <div>
+        <div style="font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem">${MONTH}</div>
+        <div>${checkoutBars}</div>
+      </div>
+      <div class="rpt-kpi-box" style="align-self:flex-start">
+        <div class="rpt-kpi-val" style="color:var(--danger)">${m.funnel.checkToBuy}%</div>
+        <div class="rpt-kpi-label">tasa de compra</div>
+        <div class="rpt-kpi-delta">${delta(m.funnel.checkToBuy, c.funnel.checkToBuy)}</div>
+        <div style="margin-top:0.75rem;font-size:0.62rem;color:var(--muted);font-family:'IBM Plex Mono',monospace">${CMP}: ${c.funnel.checkToBuy}%</div>
+      </div>
+    </div>`
+  );
+
+  // SLIDE 4: Usabilidad KPIs
+  const kpis = [
+    {label:'Sesiones',        main:fmtN(m.clarity.sessions),      cmp:fmtN(c.clarity.sessions),      raw:[m.clarity.sessions, c.clarity.sessions]},
+    {label:'Scroll promedio', main:m.clarity.scrollDepth+'%',      cmp:c.clarity.scrollDepth+'%',      raw:[m.clarity.scrollDepth, c.clarity.scrollDepth]},
+    {label:'Bounce rate',     main:m.clarity.bounceRate+'%',       cmp:c.clarity.bounceRate+'%',       raw:[m.clarity.bounceRate, c.clarity.bounceRate], invert:true},
+    {label:'Duración sesión', main:m.clarity.avgDuration+'s',      cmp:c.clarity.avgDuration+'s',      raw:[m.clarity.avgDuration, c.clarity.avgDuration]},
+    {label:'Rage clicks',     main:m.clarity.rageRate+'%',         cmp:c.clarity.rageRate+'%',         raw:[m.clarity.rageRate, c.clarity.rageRate], invert:true},
+  ];
+  const kpiRows = kpis.map(k=>`<div class="rpt-compare-row">
+    <span class="rpt-compare-label">${k.label}</span>
+    <span class="rpt-compare-main">${k.main} ${delta(k.raw[0],k.raw[1],k.invert)}</span>
+    <span class="rpt-compare-cmp">${k.cmp}</span>
+  </div>`).join('');
+
+  const scrollBars = [
+    {d:'25%', main:m.clarity.scroll25, cmp:c.clarity.scroll25},
+    {d:'50%', main:m.clarity.scroll50, cmp:c.clarity.scroll50},
+    {d:'75%', main:m.clarity.scroll75, cmp:c.clarity.scroll75},
+    {d:'100%',main:m.clarity.scroll100,cmp:c.clarity.scroll100},
+  ].map(s=>`<div class="rpt-scroll-bar">
+    <span class="rpt-scroll-label">${s.d}</span>
+    <div class="rpt-scroll-track">
+      <div class="rpt-scroll-fill" style="width:${s.main||0}%;background:var(--accent)60"></div>
+    </div>
+    <span class="rpt-scroll-val">${s.main||0}%</span>
+  </div>`).join('');
+
+  html += slide('USABILIDAD Y NAVEGACIÓN', 'Principales Métricas de Usabilidad', `Fuente: Microsoft Clarity`,
+    `<div class="rpt-body">${ai.usabilityInsight||''}</div>
+    <div class="rpt-two-col">
+      <div>
+        <div style="font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;display:flex;justify-content:space-between"><span>KPI</span><span style="display:flex;gap:3rem"><span>${MONTH}</span><span>${CMP}</span></span></div>
+        ${kpiRows}
+      </div>
+      <div>
+        <div style="font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem">profundidad de scroll · ${MONTH}</div>
+        ${scrollBars}
+      </div>
+    </div>`
+  );
+
+  // SLIDE 5: Heatmap insight
+  html += slide('USABILIDAD Y NAVEGACIÓN', 'Mapas de Calor y Clics', `Microsoft Clarity · ${MONTH}`,
+    `<div class="rpt-body">${ai.heatmapInsight||''}</div>
+    <div class="rpt-two-col" style="margin-top:1rem">
+      <div class="rpt-kpi-box">
+        <div style="font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem">Desktop</div>
+        <div style="font-size:0.78rem;color:var(--muted2);line-height:1.7">Scroll depth: <strong>${m.clarity.scrollDepth||0}%</strong><br>Bounce rate: <strong>${m.clarity.bounceRate||0}%</strong><br>Rage clicks: <strong>${m.clarity.rageRate||0}%</strong></div>
+      </div>
+      <div class="rpt-kpi-box">
+        <div style="font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem">Comparación ${CMP}</div>
+        <div style="font-size:0.78rem;color:var(--muted2);line-height:1.7">Scroll depth: <strong>${c.clarity.scrollDepth||0}%</strong><br>Bounce rate: <strong>${c.clarity.bounceRate||0}%</strong><br>Rage clicks: <strong>${c.clarity.rageRate||0}%</strong></div>
+      </div>
+    </div>`
+  );
+
+  // SLIDE 6: Fuentes de tráfico
+  const maxSrc = m.sources[0]?.orders||1;
+  const srcRows = m.sources.map(s=>{
+    const cmpS = c.sources.find(x=>x.source===s.source);
+    return `<div class="rpt-source-row">
+      <span class="rpt-source-name">${s.source}</span>
+      <div class="rpt-source-bar"><div class="rpt-source-fill" style="width:${Math.round(s.orders/maxSrc*100)}%"></div></div>
+      <span class="rpt-source-val">${s.orders} ord.</span>
+      ${cmpS?`<span class="rpt-source-val" style="color:var(--muted)">(${cmpS.orders})</span>`:''}
+      <span>${delta(s.orders,cmpS?.orders)}</span>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:0.75rem">No hay datos de fuentes disponibles</div>';
+
+  html += slide('FUENTES DE TRÁFICO', 'Canales de Adquisición', `${MONTH} vs ${CMP}`,
+    `<div class="rpt-body">${ai.trafficInsight||''}</div>${srcRows}`
+  );
+
+  // SLIDE 7: Wins, Alerts, Actions
+  const winItems = (ai.keyWins||[]).map(w=>`<li><span class="rpt-list-icon">✅</span>${w}</li>`).join('');
+  const alertItems = (ai.keyAlerts||[]).map(a=>`<li><span class="rpt-list-icon">⚠️</span>${a}</li>`).join('');
+  const actionItems = (ai.nextActions||[]).map(a=>`<li><span class="rpt-list-icon">→</span>${a}</li>`).join('');
+
+  html += slide('CONCLUSIONES', 'Logros, Alertas y Próximos Pasos', `${MONTH}`,
+    `<div class="rpt-three-col">
+      <div>
+        <div style="font-size:0.62rem;font-family:'IBM Plex Mono',monospace;color:var(--good);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem">✅ Logros del mes</div>
+        <ul class="rpt-list">${winItems||'<li><span class="rpt-list-icon">—</span>Sin datos</li>'}</ul>
+      </div>
+      <div>
+        <div style="font-size:0.62rem;font-family:'IBM Plex Mono',monospace;color:var(--danger);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem">⚠️ Alertas prioritarias</div>
+        <ul class="rpt-list">${alertItems||'<li><span class="rpt-list-icon">—</span>Sin datos</li>'}</ul>
+      </div>
+      <div>
+        <div style="font-size:0.62rem;font-family:'IBM Plex Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem">→ Acciones próximo mes</div>
+        <ul class="rpt-list">${actionItems||'<li><span class="rpt-list-icon">—</span>Sin datos</li>'}</ul>
+      </div>
+    </div>`
+  );
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+function exportReport(){
+  if(!reportData) return;
+  // Export as CSV summary
+  const m=reportData.main, c=reportData.compare, ai=reportData.aiInsights||{};
+  const rows=[
+    ['REPORTE MENSUAL','','',''],
+    ['Período',reportData.monthLabel,'vs',reportData.compareLabel],
+    ['','','',''],
+    ['VENTAS','','',''],
+    ['Órdenes',m.funnel.purchases,'',c.funnel.purchases],
+    ['Conversión',m.funnel.cvr+'%','',c.funnel.cvr+'%'],
+    ['','','',''],
+    ['FUNNEL','','',''],
+    ['Visitas',m.funnel.visits,'',c.funnel.visits],
+    ['PDP',m.funnel.pdp,'',c.funnel.pdp],
+    ['Carrito',m.funnel.cart,'',c.funnel.cart],
+    ['Checkout',m.funnel.checkout,'',c.funnel.checkout],
+    ['Compra',m.funnel.purchases,'',c.funnel.purchases],
+    ['','','',''],
+    ['USABILIDAD (Clarity)','','',''],
+    ['Sesiones',m.clarity.sessions,'',c.clarity.sessions],
+    ['Scroll promedio',m.clarity.scrollDepth+'%','',c.clarity.scrollDepth+'%'],
+    ['Bounce rate',m.clarity.bounceRate+'%','',c.clarity.bounceRate+'%'],
+    ['Duración sesión',m.clarity.avgDuration+'s','',c.clarity.avgDuration+'s'],
+    ['Rage clicks',m.clarity.rageRate+'%','',c.clarity.rageRate+'%'],
+    ['','','',''],
+    ['RESUMEN IA','','',''],
+    ['Resumen ejecutivo','"'+(ai.executiveSummary||'').replace(/"/g,'""')+'"','',''],
+  ];
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`reporte_${reportData.monthLabel.replace(' ','_')}.csv`;
+  a.click();
+}
 
 // -- HEATMAP MODE TOGGLE ------------------------------------------------------
 let hmMode = 'single';
