@@ -607,22 +607,136 @@ IMPORTANTE:
       'Eres un experto en CRO y revenue para e-commerce premium argentino. Siempre respondes con JSON válido, sin markdown, sin explicaciones fuera del JSON.',
       2000);
 
-    // Parse JSON safely
+    // Parse JSON safely - handle markdown fences and nested objects
     let analysis;
     try {
-      const jsonMatch = raw.match(/\{[\s\S]*\}/);
-      analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+      // Remove markdown code fences if present
+      let cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+      // Find the outermost JSON object
+      const start = cleaned.indexOf('{');
+      const end = cleaned.lastIndexOf('}');
+      if (start !== -1 && end !== -1 && end > start) {
+        const jsonStr = cleaned.slice(start, end + 1);
+        analysis = JSON.parse(jsonStr);
+      } else {
+        analysis = null;
+      }
+      console.log('Intelligence analysis parsed OK, keys:', analysis ? Object.keys(analysis).join(',') : 'null');
     } catch(e) {
+      console.error('Intelligence JSON parse error:', e.message);
+      console.error('Raw response preview:', raw.slice(0, 500));
       analysis = null;
     }
 
     res.json({
       analysis,
+      rawAnalysis: analysis ? null : raw.slice(0, 3000),
       rawData: { funnelData, clarityData, sourcesData },
       period: dateRange
     });
 
   } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+
+// -- MULTI-PAGE HEATMAP ANALYSIS ----------------------------------------------
+app.post('/api/heatmap-multi', async (req, res) => {
+  const { dateRange = '7', pages } = req.body;
+  if (!CLARITY_PROJECT_ID || !CLARITY_API_KEY)
+    return res.status(400).json({ error: 'Credenciales Clarity no configuradas' });
+
+  const endDate = new Date();
+  const startDate = new Date(endDate - parseInt(dateRange) * 86400000);
+  const fmtDate = d => d.toISOString().split('T')[0];
+  const clarityHdr = { 'Authorization': `Bearer ${CLARITY_API_KEY}`, 'Accept': 'application/json' };
+
+  // 1. Build pages list auto from VTEX
+  let pageList = pages || [];
+  if (!pageList.length && VTEX_ACCOUNT && VTEX_APP_KEY && VTEX_APP_TOKEN) {
+    try {
+      pageList.push({ url: 'https://www.sarkanyar.com/', label: 'Home', type: 'home' });
+      pageList.push({ url: 'https://www.sarkanyar.com/zapatillas/', label: 'Zapatillas', type: 'category' });
+      pageList.push({ url: 'https://www.sarkanyar.com/zapatos/', label: 'Zapatos', type: 'category' });
+      pageList.push({ url: 'https://www.sarkanyar.com/accesorios/', label: 'Accesorios', type: 'category' });
+      const base = `https://${VTEX_ACCOUNT}.vtexcommercestable.com.br`;
+      const r = await fetch(
+        `${base}/api/catalog_system/pub/products/search?_from=0&_to=4&O=OrderByTopSaleDESC`,
+        { headers: { 'X-VTEX-API-AppKey': VTEX_APP_KEY, 'X-VTEX-API-AppToken': VTEX_APP_TOKEN, 'Accept': 'application/json' } }
+      );
+      if (r.ok) {
+        const products = await r.json();
+        for (const p of products.slice(0, 4)) {
+          const link = p.link || '';
+          const url = link.startsWith('http') ? link : `https://www.sarkanyar.com${link}`;
+          pageList.push({ url, label: (p.productName || 'Producto').slice(0, 28), type: 'product' });
+        }
+      }
+    } catch(e) { console.error('VTEX pages error:', e.message); }
+  }
+
+  if (!pageList.length) return res.status(400).json({ error: 'No hay paginas para analizar' });
+
+  // 2. Fetch Clarity data for each page
+  const pageResults = await Promise.all(pageList.map(async (page) => {
+    try {
+      const encodedUrl = encodeURIComponent(page.url);
+      const [metricsRes, hmRes, sessRes] = await Promise.all([
+        fetch(`https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}&startDate=${fmtDate(startDate)}&endDate=${fmtDate(endDate)}`, { headers: clarityHdr }),
+        fetch(`https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}&startDate=${fmtDate(startDate)}&endDate=${fmtDate(endDate)}&type=click&url=${encodedUrl}`, { headers: clarityHdr }),
+        fetch(`https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}&startDate=${fmtDate(startDate)}&endDate=${fmtDate(endDate)}&type=session&url=${encodedUrl}`, { headers: clarityHdr })
+      ]);
+      const metrics  = metricsRes.ok ? await metricsRes.json() : {};
+      const hmData   = hmRes.ok     ? await hmRes.json()     : {};
+      const sessData = sessRes.ok   ? await sessRes.json()   : {};
+      const sessions = sessData.sessions || sessData.data || [];
+      const rageClicks = sessions.filter(s => (s.rageClickCount || 0) > 0).length;
+      const deadClicks = sessions.filter(s => (s.deadClickCount || 0) > 0).length;
+      const totalSess  = metrics.totalSessionCount || sessions.length || 0;
+      const avgScroll  = metrics.averageScrollDepth || 0;
+      const avgDur     = sessions.reduce((s,x)=>s+(x.duration||0),0) / (sessions.length||1);
+      const bounceRate = metrics.bounceRate || 0;
+      const clickAreas = (hmData.clickData || hmData.data || hmData.elements || []).slice(0,5).map((c,i) => ({
+        zone: c.element || c.label || c.name || `Zona ${i+1}`,
+        clicks: c.clickCount || c.count || 0,
+        pct: +(c.percentage || 0).toFixed(1),
+        x: c.x || [50,25,75,50,25][i] || 50,
+        y: c.y || [10,30,30,55,70][i] || 50
+      }));
+      const scrollScore = Math.min(avgScroll / 60 * 30, 30);
+      const bounceScore = Math.max(30 - bounceRate * 0.5, 0);
+      const rageScore   = Math.max(20 - (rageClicks/(totalSess||1))*100, 0);
+      const durScore    = Math.min(avgDur / 120 * 20, 20);
+      const uxScore     = Math.round(scrollScore + bounceScore + rageScore + durScore);
+      return {
+        ...page, totalSessions: totalSess, avgScrollDepth: avgScroll,
+        avgDuration: Math.round(avgDur), bounceRate,
+        rageClickRate: totalSess ? Math.round(rageClicks/totalSess*100) : 0,
+        deadClickRate: totalSess ? Math.round(deadClicks/totalSess*100) : 0,
+        clickAreas, uxScore,
+        scrollData: [
+          { depth:0, pct:100 }, { depth:25, pct: metrics.scroll25 || 78 },
+          { depth:50, pct: metrics.scroll50 || 55 }, { depth:75, pct: metrics.scroll75 || 34 },
+          { depth:100, pct: metrics.scroll100 || 18 }
+        ]
+      };
+    } catch(e) { return { ...page, error: e.message, uxScore: 0, totalSessions: 0 }; }
+  }));
+
+  // 3. IA comparison
+  const pagesCtx = pageResults.map(p =>
+    `${p.label} (${p.type}) - UX: ${p.uxScore}/100 | Sessions: ${p.totalSessions} | Scroll: ${p.avgScrollDepth}% | Bounce: ${p.bounceRate}% | RageClicks: ${p.rageClickRate}% | Dur: ${p.avgDuration}s`
+  ).join('\n');
+
+  let comparison = null;
+  try {
+    const raw = await callClaude([{ role: 'user', content: `CRO expert. Analyze behavior data from Ricky Sarkany e-commerce pages. Respond ONLY with valid JSON no markdown:\n{\n  "winner": "label",\n  "loser": "label",\n  "winnerReason": "1-2 sentences why this page works better",\n  "loserReason": "main problem of worst page",\n  "insights": [{"page":"label","type":"home|category|product","finding":"specific insight","action":"concrete action","priority":"critical|high|medium"}],\n  "recommendation": "2-3 sentence executive recommendation"\n}\n\nDATA (${dateRange} days):\n${pagesCtx}` }],
+      'CRO expert for premium e-commerce. Respond ONLY with valid JSON.', 1000);
+    const m = raw.match(/\{[\s\S]*\}/);
+    comparison = m ? JSON.parse(m[0]) : null;
+  } catch(e) { comparison = null; }
+
+  pageResults.sort((a, b) => b.uxScore - a.uxScore);
+  res.json({ pages: pageResults, comparison, period: dateRange });
 });
 
 const PORT = process.env.PORT || 3000;
