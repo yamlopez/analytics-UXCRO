@@ -742,221 +742,117 @@ app.post('/api/heatmap-multi', async (req, res) => {
 
 // -- MONTHLY REPORT ----------------------------------------------------------
 app.post('/api/monthly-report', async (req, res) => {
+  const MNAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const fd = d => d.toISOString().split('T')[0];
+
   const { month, year, compareMonth, compareYear } = req.body;
   const now = new Date();
-  // Use explicit parsing - month 0 (January) would fail with || fallback
-  const reportYear  = year  !== undefined ? parseInt(year)        : now.getFullYear();
-  const reportMonth = month !== undefined ? parseInt(month)       : now.getMonth();
-  const cmpYear     = compareYear  !== undefined ? parseInt(compareYear)  : (reportMonth===0 ? reportYear-1 : reportYear);
-  const cmpMonth    = compareMonth !== undefined ? parseInt(compareMonth) : (reportMonth===0 ? 11 : reportMonth-1);
+  const rY  = year         !== undefined ? parseInt(year)         : now.getFullYear();
+  const rM  = month        !== undefined ? parseInt(month)        : now.getMonth();
+  const cY  = compareYear  !== undefined ? parseInt(compareYear)  : (rM===0 ? rY-1 : rY);
+  const cM  = compareMonth !== undefined ? parseInt(compareMonth) : (rM===0 ? 11   : rM-1);
 
-  // Date ranges - cap mainTo at today if current/future month
-  const mainFrom = new Date(reportYear, reportMonth, 1);
-  const lastDayOfMonth = new Date(reportYear, reportMonth+1, 0, 23, 59, 59);
-  const mainTo = lastDayOfMonth > now ? now : lastDayOfMonth;
-  const cmpFrom  = new Date(cmpYear, cmpMonth, 1);
-  const cmpTo    = new Date(cmpYear, cmpMonth+1, 0, 23, 59, 59);
-  
-  console.log('Monthly report:', MONTH_NAMES[reportMonth], reportYear, '->', fmtDate(mainFrom), 'to', fmtDate(mainTo));
-  console.log('Compare:', MONTH_NAMES[cmpMonth], cmpYear, '->', fmtDate(cmpFrom), 'to', fmtDate(cmpTo));
-  const clarityHdr = { 'Authorization': `Bearer ${CLARITY_API_KEY}`, 'Accept': 'application/json' };
-  const vtexHdr    = { 'X-VTEX-API-AppKey': VTEX_APP_KEY, 'X-VTEX-API-AppToken': VTEX_APP_TOKEN, 'Accept': 'application/json' };
-  const base       = `https://${VTEX_ACCOUNT}.vtexcommercestable.com.br`;
-  const clarityBase= `https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}`;
+  const mFrom = new Date(rY, rM, 1);
+  const mToRaw = new Date(rY, rM+1, 0, 23, 59, 59);
+  const mTo = mToRaw > now ? now : mToRaw;
+  const cFrom = new Date(cY, cM, 1);
+  const cTo   = new Date(cY, cM+1, 0, 23, 59, 59);
+
+  console.log(`Monthly report: ${MNAMES[rM]} ${rY} (${fd(mFrom)}-${fd(mTo)}) vs ${MNAMES[cM]} ${cY}`);
+
+  const vtexH = { 'X-VTEX-API-AppKey': VTEX_APP_KEY, 'X-VTEX-API-AppToken': VTEX_APP_TOKEN, 'Accept': 'application/json' };
+  const clH   = { 'Authorization': `Bearer ${CLARITY_API_KEY}`, 'Accept': 'application/json' };
+  const base  = `https://${VTEX_ACCOUNT}.vtexcommercestable.com.br`;
+  const clBase= `https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}`;
 
   try {
-    // 1. VTEX OMS - orders both periods
-    const [mainOrdersRes, cmpOrdersRes] = await Promise.all([
-      fetch(`${base}/api/oms/pvt/orders?f_creationDate=creationDate:[${mainFrom.toISOString()} TO ${mainTo.toISOString()}]&page=1&per_page=100`, { headers: vtexHdr }),
-      fetch(`${base}/api/oms/pvt/orders?f_creationDate=creationDate:[${cmpFrom.toISOString()} TO ${cmpTo.toISOString()}]&page=1&per_page=100`,  { headers: vtexHdr })
+    // 1. VTEX orders - both periods
+    const [mOrdRes, cOrdRes] = await Promise.all([
+      fetch(`${base}/api/oms/pvt/orders?f_creationDate=creationDate:[${mFrom.toISOString()} TO ${mTo.toISOString()}]&page=1&per_page=100`, { headers: vtexH }),
+      fetch(`${base}/api/oms/pvt/orders?f_creationDate=creationDate:[${cFrom.toISOString()} TO ${cTo.toISOString()}]&page=1&per_page=100`, { headers: vtexH })
     ]);
-    const mainOrders = mainOrdersRes.ok ? await mainOrdersRes.json() : {};
-    const cmpOrders  = cmpOrdersRes.ok  ? await cmpOrdersRes.json()  : {};
+    const mOrd = mOrdRes.ok ? await mOrdRes.json() : {};
+    const cOrd = cOrdRes.ok ? await cOrdRes.json() : {};
+    const mPurch = mOrd.paging?.total || mOrd.list?.length || 0;
+    const cPurch = cOrd.paging?.total || cOrd.list?.length || 0;
 
-    const mainPurchases = mainOrders.paging?.total || mainOrders.list?.length || 0;
-    const cmpPurchases  = cmpOrders.paging?.total  || cmpOrders.list?.length  || 0;
-
-    // Revenue + UTM sources - fetch only 8 orders in parallel (not sequential) to avoid timeout
-    const mainSources={}, cmpSources={};
-    const orderList = mainOrders.list||[];
-    const cmpList   = cmpOrders.list||[];
-
-    const fetchOrderDetail = async (orderId) => {
-      try {
-        const d = await fetch(`${base}/api/oms/pvt/orders/${orderId}`, { headers: vtexHdr });
-        return d.ok ? await d.json() : null;
-      } catch { return null; }
+    // 2. Order details in parallel (8 each)
+    const fetchDet = async id => {
+      try { const r = await fetch(`${base}/api/oms/pvt/orders/${id}`, {headers:vtexH}); return r.ok ? r.json() : null; } catch { return null; }
     };
-
-    // Parallel fetch - max 8 orders each period
-    const [mainDetails, cmpDetails] = await Promise.all([
-      Promise.all(orderList.slice(0,8).map(o => fetchOrderDetail(o.orderId))),
-      Promise.all(cmpList.slice(0,8).map(o => fetchOrderDetail(o.orderId)))
+    const mList = mOrd.list||[], cList = cOrd.list||[];
+    const [mDets, cDets] = await Promise.all([
+      Promise.all(mList.slice(0,8).map(o=>fetchDet(o.orderId))),
+      Promise.all(cList.slice(0,8).map(o=>fetchDet(o.orderId)))
     ]);
+    const mSrc={}, cSrc={};
+    let mRev=0, cRev=0;
+    mDets.filter(Boolean).forEach(d=>{ mRev+=(d.value||0)/100; const s=d.marketingData?.utmSource||d.origin||'directo'; mSrc[s]=(mSrc[s]||0)+1; });
+    cDets.filter(Boolean).forEach(d=>{ cRev+=(d.value||0)/100; const s=d.marketingData?.utmSource||d.origin||'directo'; cSrc[s]=(cSrc[s]||0)+1; });
+    const mAOV = mDets.filter(Boolean).length>0 ? Math.round(mRev/mDets.filter(Boolean).length) : 0;
+    const cAOV = cDets.filter(Boolean).length>0 ? Math.round(cRev/cDets.filter(Boolean).length) : 0;
 
-    let mainRevenue = 0, cmpRevenue = 0;
-    mainDetails.filter(Boolean).forEach(od => {
-      mainRevenue += (od.value||0)/100;
-      const src = od.marketingData?.utmSource || od.marketingData?.utmCampaign || od.origin || 'directo';
-      mainSources[src] = (mainSources[src]||0)+1;
-    });
-    cmpDetails.filter(Boolean).forEach(od => {
-      cmpRevenue += (od.value||0)/100;
-      const src = od.marketingData?.utmSource || od.marketingData?.utmCampaign || od.origin || 'directo';
-      cmpSources[src] = (cmpSources[src]||0)+1;
-    });
-
-    const mainDetCount = mainDetails.filter(Boolean).length || 1;
-    const cmpDetCount  = cmpDetails.filter(Boolean).length  || 1;
-    const mainAOV = mainPurchases>0 ? Math.round((mainRevenue/mainDetCount)) : 0;
-    const cmpAOV  = cmpPurchases>0  ? Math.round((cmpRevenue/cmpDetCount))   : 0;
-
-    // Funnel estimates
-    const buildFunnel = (purchases) => {
-      const checkout = Math.round(purchases/0.47);
-      const cart     = Math.round(checkout/0.56);
-      const pdp      = Math.round(cart/0.41);
-      const visits   = Math.round(pdp/0.65);
-      return { visits, pdp, cart, checkout, purchases,
-        visitToPdp:  Math.round(pdp/visits*100),
-        pdpToCart:   Math.round(cart/pdp*100),
-        cartToCheck: Math.round(checkout/cart*100),
-        checkToBuy:  Math.round(purchases/checkout*100),
-        cvr: visits>0 ? +((purchases/visits)*100).toFixed(2) : 0
-      };
+    // 3. Funnel estimates
+    const mkFunnel = p => {
+      const co=Math.round(p/0.47), ca=Math.round(co/0.56), pd=Math.round(ca/0.41), vi=Math.round(pd/0.65);
+      return {visits:vi,pdp:pd,cart:ca,checkout:co,purchases:p,
+        visitToPdp:vi>0?Math.round(pd/vi*100):0, pdpToCart:pd>0?Math.round(ca/pd*100):0,
+        cartToCheck:ca>0?Math.round(co/ca*100):0, checkToBuy:co>0?Math.round(p/co*100):0,
+        cvr:vi>0?+((p/vi)*100).toFixed(2):0};
     };
-    const mainFunnel = buildFunnel(mainPurchases);
-    const cmpFunnel  = buildFunnel(cmpPurchases);
+    const mFunnel=mkFunnel(mPurch), cFunnel=mkFunnel(cPurch);
 
-    // 2. Clarity - both periods (global project metrics, no URL filter)
-    console.log('Clarity requests:', fmtDate(mainFrom), '->', fmtDate(mainTo));
-    const [mMetRes, mSessRes, cMetRes, cSessRes] = await Promise.all([
-      fetch(`${clarityBase}&startDate=${fmtDate(mainFrom)}&endDate=${fmtDate(mainTo)}`, { headers: clarityHdr }),
-      fetch(`${clarityBase}&startDate=${fmtDate(mainFrom)}&endDate=${fmtDate(mainTo)}&numOfSessions=50`, { headers: clarityHdr }),
-      fetch(`${clarityBase}&startDate=${fmtDate(cmpFrom)}&endDate=${fmtDate(cmpTo)}`, { headers: clarityHdr }),
-      fetch(`${clarityBase}&startDate=${fmtDate(cmpFrom)}&endDate=${fmtDate(cmpTo)}&numOfSessions=50`, { headers: clarityHdr })
+    // 4. Clarity both periods
+    const [mMR, mSR, cMR, cSR] = await Promise.all([
+      fetch(`${clBase}&startDate=${fd(mFrom)}&endDate=${fd(mTo)}`, {headers:clH}),
+      fetch(`${clBase}&startDate=${fd(mFrom)}&endDate=${fd(mTo)}&numOfSessions=50`, {headers:clH}),
+      fetch(`${clBase}&startDate=${fd(cFrom)}&endDate=${fd(cTo)}`, {headers:clH}),
+      fetch(`${clBase}&startDate=${fd(cFrom)}&endDate=${fd(cTo)}&numOfSessions=50`, {headers:clH})
     ]);
-    console.log('Clarity status:', mMetRes.status, mSessRes.status, cMetRes.status, cSessRes.status);
-    const mMet  = mMetRes.ok  ? await mMetRes.json()  : {};
-    const mSess = mSessRes.ok ? await mSessRes.json()  : {};
-    const cMet  = cMetRes.ok  ? await cMetRes.json()   : {};
-    const cSess = cSessRes.ok ? await cSessRes.json()   : {};
-    const mSessArr = mSess.sessions||mSess.data||[];
-    const cSessArr = cSess.sessions||cSess.data||[];
-    const mRage = mSessArr.filter(s=>(s.rageClickCount||0)>0).length;
-    const mDead = mSessArr.filter(s=>(s.deadClickCount||0)>0).length;
-    const cRage = cSessArr.filter(s=>(s.rageClickCount||0)>0).length;
+    const mMet=mMR.ok?await mMR.json():{}, mSes=mSR.ok?await mSR.json():{};
+    const cMet=cMR.ok?await cMR.json():{}, cSes=cSR.ok?await cSR.json():{};
+    const mSArr=mSes.sessions||mSes.data||[], cSArr=cSes.sessions||cSes.data||[];
+    const mRage=mSArr.filter(s=>(s.rageClickCount||0)>0).length;
+    const cRage=cSArr.filter(s=>(s.rageClickCount||0)>0).length;
+    const mClar={sessions:mMet.totalSessionCount||mSArr.length||0,scrollDepth:mMet.averageScrollDepth||0,bounceRate:mMet.bounceRate||0,
+      avgDuration:Math.round(mSArr.reduce((s,x)=>s+(x.duration||0),0)/(mSArr.length||1)),
+      rageRate:mSArr.length?Math.round(mRage/mSArr.length*100):0,
+      scroll25:mMet.scroll25||78,scroll50:mMet.scroll50||55,scroll75:mMet.scroll75||34,scroll100:mMet.scroll100||18};
+    const cClar={sessions:cMet.totalSessionCount||cSArr.length||0,scrollDepth:cMet.averageScrollDepth||0,bounceRate:cMet.bounceRate||0,
+      avgDuration:Math.round(cSArr.reduce((s,x)=>s+(x.duration||0),0)/(cSArr.length||1)),
+      rageRate:cSArr.length?Math.round(cRage/cSArr.length*100):0,
+      scroll25:cMet.scroll25||78,scroll50:cMet.scroll50||55,scroll75:cMet.scroll75||34,scroll100:cMet.scroll100||18};
 
-    const mainClarity = {
-      sessions:    mMet.totalSessionCount||mSessArr.length||0,
-      scrollDepth: mMet.averageScrollDepth||0,
-      bounceRate:  mMet.bounceRate||0,
-      avgDuration: Math.round(mSessArr.reduce((s,x)=>s+(x.duration||0),0)/(mSessArr.length||1)),
-      rageRate:    mSessArr.length ? Math.round(mRage/mSessArr.length*100) : 0,
-      deadRate:    mSessArr.length ? Math.round(mDead/mSessArr.length*100) : 0,
-      scroll25:    mMet.scroll25||78, scroll50: mMet.scroll50||55,
-      scroll75:    mMet.scroll75||34, scroll100: mMet.scroll100||18
-    };
-    const cmpClarity = {
-      sessions:    cMet.totalSessionCount||cSessArr.length||0,
-      scrollDepth: cMet.averageScrollDepth||0,
-      bounceRate:  cMet.bounceRate||0,
-      avgDuration: Math.round(cSessArr.reduce((s,x)=>s+(x.duration||0),0)/(cSessArr.length||1)),
-      rageRate:    cSessArr.length ? Math.round(cRage/cSessArr.length*100) : 0,
-      scroll25:    cMet.scroll25||78, scroll50: cMet.scroll50||55,
-      scroll75:    cMet.scroll75||34, scroll100: cMet.scroll100||18
-    };
-
-    // 3. Top pages from VTEX catalog (as proxy for most visited)
-    let topPages = [];
-    try {
-      const pr = await fetch(`${base}/api/catalog_system/pub/products/search?_from=0&_to=5&O=OrderByTopSaleDESC`, { headers: vtexHdr });
-      if(pr.ok){
-        const prods = await pr.json();
-        topPages = prods.slice(0,5).map(p=>({
-          name: (p.productName||'').slice(0,35),
-          url: p.link||'',
-          category: (p.categories||[''])[0]||''
-        }));
-      }
-    }catch{}
-
-    // 4. Source summaries
-    const sortSrc = obj => Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>({source:k,orders:v}));
-
-    // 5. IA generates full report insights
-    const ctx = `
-REPORTE MENSUAL: ${MONTH_NAMES[reportMonth]} ${reportYear} vs ${MONTH_NAMES[cmpMonth]} ${cmpYear}
-
-VENTAS Y REVENUE:
-- ${MONTH_NAMES[reportMonth]}: ${mainPurchases} ordenes | Revenue aprox $${mainAOV.toLocaleString()} ARS | CVR: ${mainFunnel.cvr}%
-- ${MONTH_NAMES[cmpMonth]}: ${cmpPurchases} ordenes | Revenue aprox $${cmpAOV.toLocaleString()} ARS | CVR: ${cmpFunnel.cvr}%
-- Variacion ordenes: ${cmpPurchases>0?((mainPurchases-cmpPurchases)/cmpPurchases*100).toFixed(1):0}%
-
-FUNNEL ${MONTH_NAMES[reportMonth]}:
-Visitas: ${mainFunnel.visits} | PDP: ${mainFunnel.pdp} (${mainFunnel.visitToPdp}%) | Carrito: ${mainFunnel.cart} (${mainFunnel.pdpToCart}%) | Checkout: ${mainFunnel.checkout} (${mainFunnel.cartToCheck}%) | Compra: ${mainFunnel.purchases} (${mainFunnel.checkToBuy}%)
-
-FUNNEL ${MONTH_NAMES[cmpMonth]}:
-Visitas: ${cmpFunnel.visits} | PDP: ${cmpFunnel.pdp} (${cmpFunnel.visitToPdp}%) | Carrito: ${cmpFunnel.cart} (${cmpFunnel.pdpToCart}%) | Checkout: ${cmpFunnel.checkout} (${cmpFunnel.cartToCheck}%) | Compra: ${cmpFunnel.purchases} (${cmpFunnel.checkToBuy}%)
-
-USABILIDAD ${MONTH_NAMES[reportMonth]} (Clarity):
-Sesiones: ${mainClarity.sessions} | Scroll: ${mainClarity.scrollDepth}% | Bounce: ${mainClarity.bounceRate}% | Duracion: ${mainClarity.avgDuration}s | Rage clicks: ${mainClarity.rageRate}%
-
-USABILIDAD ${MONTH_NAMES[cmpMonth]} (Clarity):
-Sesiones: ${cmpClarity.sessions} | Scroll: ${cmpClarity.scrollDepth}% | Bounce: ${cmpClarity.bounceRate}% | Duracion: ${cmpClarity.avgDuration}s | Rage clicks: ${cmpClarity.rageRate}%
-
-FUENTES DE TRAFICO ${MONTH_NAMES[reportMonth]}:
-${sortSrc(mainSources).map(s=>s.source+': '+s.orders+' ordenes').join(' | ')||'no disponible'}
-
-TOP PRODUCTOS MAS VENDIDOS:
-${topPages.map(p=>p.name).join(', ')||'no disponible'}
-`;
-
-    const raw = await callClaude([{ role: 'user', content: `Sos el analista de CRO y UX de Ricky Sarkany, marca premium de calzado argentina. Genera el reporte mensual ejecutivo basado en estos datos reales.
-
-${ctx}
-
-Responde SOLO con JSON valido sin markdown:
-{
-  "executiveSummary": "3-4 oraciones ejecutivas comparando ambos periodos, contextualizando por estacionalidad, campanas o lanzamientos. Tono directo, orientado a negocio.",
-  "salesInsight": "2-3 oraciones sobre ventas y revenue. Explica el por que de los numeros, no solo los numeros.",
-  "funnelInsight": "2-3 oraciones analizando el funnel. Identifica el mayor punto de friccion y por que. Compara ambos periodos.",
-  "checkoutInsight": "2-3 oraciones sobre el funnel de checkout especificamente. Donde abandona el usuario y que lo puede causar.",
-  "usabilityInsight": "2-3 oraciones sobre comportamiento en el sitio. Scroll, bounce, rage clicks, lo que sea relevante.",
-  "heatmapInsight": "2 oraciones sobre navegacion y mapas de calor. Que zonas concentran atencion, que banners funcionan, patrones desktop vs mobile.",
-  "trafficInsight": "2 oraciones sobre fuentes de trafico. Cual lidera, cual preocupa, oportunidades.",
-  "topPages": ["pagina 1 mas visitada logica", "pagina 2", "pagina 3"],
-  "keyWins": ["logro 1 del mes en 1 oracion", "logro 2", "logro 3"],
-  "keyAlerts": ["alerta 1 prioritaria", "alerta 2", "alerta 3"],
-  "nextActions": ["accion 1 para el proximo mes", "accion 2", "accion 3"],
-  "monthLabel": "${MONTH_NAMES[reportMonth]} ${reportYear}",
-  "compareLabel": "${MONTH_NAMES[cmpMonth]} ${cmpYear}"
-}` }],
-      'Expert CRO analyst for premium Argentine e-commerce. You MUST respond with ONLY a valid JSON object. Start with { and end with }. No markdown, no backticks, no explanation outside JSON.',
-      1200
-    );
+    // 5. AI insights
+    const ctx = `REPORTE: ${MNAMES[rM]} ${rY} vs ${MNAMES[cM]} ${cY}
+VENTAS: ${mPurch} ordenes (CVR ${mFunnel.cvr}%) vs ${cPurch} ordenes (CVR ${cFunnel.cvr}%)
+FUNNEL MAIN: visitas ${mFunnel.visits} | pdp ${mFunnel.pdp}(${mFunnel.visitToPdp}%) | carrito ${mFunnel.cart}(${mFunnel.pdpToCart}%) | checkout ${mFunnel.checkout}(${mFunnel.cartToCheck}%) | compra ${mFunnel.purchases}(${mFunnel.checkToBuy}%)
+FUNNEL CMP: visitas ${cFunnel.visits} | pdp ${cFunnel.pdp}(${cFunnel.visitToPdp}%) | carrito ${cFunnel.cart}(${cFunnel.pdpToCart}%) | checkout ${cFunnel.checkout}(${cFunnel.cartToCheck}%) | compra ${cFunnel.purchases}(${cFunnel.checkToBuy}%)
+CLARITY MAIN: sesiones ${mClar.sessions} | scroll ${mClar.scrollDepth}% | bounce ${mClar.bounceRate}% | dur ${mClar.avgDuration}s | rage ${mClar.rageRate}%
+CLARITY CMP: sesiones ${cClar.sessions} | scroll ${cClar.scrollDepth}% | bounce ${cClar.bounceRate}% | dur ${cClar.avgDuration}s | rage ${cClar.rageRate}%
+FUENTES: ${Object.entries(mSrc).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>k+':'+v).join(', ')||'no disponible'}`;
 
     let aiInsights = null;
     try {
-      const cleaned = raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
-      const s=cleaned.indexOf('{'), e=cleaned.lastIndexOf('}');
-      if(s!==-1&&e>s) aiInsights = JSON.parse(cleaned.slice(s,e+1));
-    }catch(err){ console.error('Monthly report JSON parse error:', err.message); }
+      const raw = await callClaude([{role:'user',content:`Eres analista CRO de Ricky Sarkany ecommerce premium argentino. Genera reporte mensual. Responde SOLO JSON valido empezando con { y terminando con }: {"executiveSummary":"3-4 oraciones ejecutivas contextualizando ambos periodos","salesInsight":"2-3 oraciones sobre ventas","funnelInsight":"2-3 oraciones sobre funnel y friccion principal","checkoutInsight":"2-3 oraciones sobre checkout paso a paso","usabilityInsight":"2-3 oraciones sobre comportamiento clarity","heatmapInsight":"2 oraciones sobre navegacion y mapas de calor","trafficInsight":"2 oraciones sobre fuentes de trafico","keyWins":["logro 1","logro 2","logro 3"],"keyAlerts":["alerta 1","alerta 2","alerta 3"],"nextActions":["accion 1","accion 2","accion 3"]}\n\nDATA:\n${ctx}`}],
+        'Respond with ONLY valid JSON starting with { and ending with }. No markdown, no backticks.',1000);
+      const s=raw.indexOf('{'), e=raw.lastIndexOf('}');
+      if(s!==-1&&e>s) aiInsights=JSON.parse(raw.slice(s,e+1));
+    } catch(e2) { console.error('AI parse error:', e2.message); }
 
+    const sortSrc = obj => Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>({source:k,orders:v}));
     res.json({
-      monthLabel:   MONTH_NAMES[reportMonth]+' '+reportYear,
-      compareLabel: MONTH_NAMES[cmpMonth]+' '+cmpYear,
-      main:  { funnel: mainFunnel, clarity: mainClarity, revenue: mainAOV, sources: sortSrc(mainSources) },
-      compare: { funnel: cmpFunnel, clarity: cmpClarity, revenue: cmpAOV, sources: sortSrc(cmpSources) },
-      topPages,
+      monthLabel: MNAMES[rM]+' '+rY, compareLabel: MNAMES[cM]+' '+cY,
+      main:    {funnel:mFunnel, clarity:mClar, revenue:mAOV, sources:sortSrc(mSrc)},
+      compare: {funnel:cFunnel, clarity:cClar, revenue:cAOV, sources:sortSrc(cSrc)},
       aiInsights
     });
-
   } catch(e) {
-    console.error('Monthly report error:', e.message);
-    res.status(500).json({ error: e.message });
+    console.error('Monthly report error:', e.message, e.stack);
+    res.status(500).json({error: e.message});
   }
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
