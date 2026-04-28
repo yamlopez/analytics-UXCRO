@@ -759,9 +759,6 @@ app.post('/api/monthly-report', async (req, res) => {
   
   console.log('Monthly report:', MONTH_NAMES[reportMonth], reportYear, '->', fmtDate(mainFrom), 'to', fmtDate(mainTo));
   console.log('Compare:', MONTH_NAMES[cmpMonth], cmpYear, '->', fmtDate(cmpFrom), 'to', fmtDate(cmpTo));
-  const fmtDate  = d => d.toISOString().split('T')[0];
-  const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-
   const clarityHdr = { 'Authorization': `Bearer ${CLARITY_API_KEY}`, 'Accept': 'application/json' };
   const vtexHdr    = { 'X-VTEX-API-AppKey': VTEX_APP_KEY, 'X-VTEX-API-AppToken': VTEX_APP_TOKEN, 'Accept': 'application/json' };
   const base       = `https://${VTEX_ACCOUNT}.vtexcommercestable.com.br`;
