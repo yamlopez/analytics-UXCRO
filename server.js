@@ -819,29 +819,36 @@ app.post('/api/monthly-report', async (req, res) => {
     const mRage=mSArr.filter(s=>(s.rageClickCount||0)>0).length;
     const cRage=cSArr.filter(s=>(s.rageClickCount||0)>0).length;
     // Use same field mapping as working heatmap endpoint
+    // Helper: Clarity returns bounceRate as decimal (0.25) - convert to %
+    const toBounce = v => v > 1 ? Math.round(v) : Math.round((v||0)*100);
+    // Sessions come from metrics object OR from session array length
+    const mSessCount = mMet.totalSessionCount||mMet.sessionCount||mMet.totalCount||mSArr.length||0;
+    const cSessCount = cMet.totalSessionCount||cMet.sessionCount||cMet.totalCount||cSArr.length||0;
+
     const mClar={
-      sessions:   mMet.totalSessionCount||mMet.sessionCount||mSArr.length||0,
-      scrollDepth:mMet.averageScrollDepth||mMet.scrollDepth||62,
-      bounceRate: mMet.bounceRate||mMet.bounceRatePercentage||0,
-      avgDuration:mMet.averageSessionDuration||mMet.avgDuration||Math.round(mSArr.reduce((s,x)=>s+(x.duration||0),0)/(mSArr.length||1))||138,
-      rageRate:   mSArr.length?Math.round(mRage/mSArr.length*100):0,
-      scroll25:   mMet.scroll25||mMet.scrollDepthPercentage25||78,
-      scroll50:   mMet.scroll50||mMet.scrollDepthPercentage50||55,
-      scroll75:   mMet.scroll75||mMet.scrollDepthPercentage75||34,
-      scroll100:  mMet.scroll100||mMet.scrollDepthPercentage100||18
+      sessions:   mSessCount,
+      scrollDepth:Math.round(mMet.averageScrollDepth||mMet.scrollDepth||62),
+      bounceRate: toBounce(mMet.bounceRate||mMet.bounceRatePercentage),
+      avgDuration:Math.round(mMet.averageSessionDuration||mMet.avgDuration||mSArr.reduce((s,x)=>s+(x.duration||0),0)/(mSArr.length||1)||138),
+      rageRate:   mSessCount?Math.round(mRage/mSessCount*100):0,
+      scroll25:   Math.round(mMet.scroll25||mMet.scrollDepthPercentage25||78),
+      scroll50:   Math.round(mMet.scroll50||mMet.scrollDepthPercentage50||55),
+      scroll75:   Math.round(mMet.scroll75||mMet.scrollDepthPercentage75||34),
+      scroll100:  Math.round(mMet.scroll100||mMet.scrollDepthPercentage100||18)
     };
     const cClar={
-      sessions:   cMet.totalSessionCount||cMet.sessionCount||cSArr.length||0,
-      scrollDepth:cMet.averageScrollDepth||cMet.scrollDepth||62,
-      bounceRate: cMet.bounceRate||cMet.bounceRatePercentage||0,
-      avgDuration:cMet.averageSessionDuration||cMet.avgDuration||Math.round(cSArr.reduce((s,x)=>s+(x.duration||0),0)/(cSArr.length||1))||138,
-      rageRate:   cSArr.length?Math.round(cRage/cSArr.length*100):0,
-      scroll25:   cMet.scroll25||cMet.scrollDepthPercentage25||78,
-      scroll50:   cMet.scroll50||cMet.scrollDepthPercentage50||55,
-      scroll75:   cMet.scroll75||cMet.scrollDepthPercentage75||34,
-      scroll100:  cMet.scroll100||cMet.scrollDepthPercentage100||18
+      sessions:   cSessCount,
+      scrollDepth:Math.round(cMet.averageScrollDepth||cMet.scrollDepth||62),
+      bounceRate: toBounce(cMet.bounceRate||cMet.bounceRatePercentage),
+      avgDuration:Math.round(cMet.averageSessionDuration||cMet.avgDuration||cSArr.reduce((s,x)=>s+(x.duration||0),0)/(cSArr.length||1)||138),
+      rageRate:   cSessCount?Math.round(cRage/cSessCount*100):0,
+      scroll25:   Math.round(cMet.scroll25||cMet.scrollDepthPercentage25||78),
+      scroll50:   Math.round(cMet.scroll50||cMet.scrollDepthPercentage50||55),
+      scroll75:   Math.round(cMet.scroll75||cMet.scrollDepthPercentage75||34),
+      scroll100:  Math.round(cMet.scroll100||cMet.scrollDepthPercentage100||18)
     };
-    console.log('mClar:', JSON.stringify(mClar));
+    console.log('mMet keys:', Object.keys(mMet).join(','));
+    console.log('mClar result:', JSON.stringify(mClar));
 
     // 5. AI insights
     const ctx = `REPORTE: ${MNAMES[rM]} ${rY} vs ${MNAMES[cM]} ${cY}
