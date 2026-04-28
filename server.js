@@ -744,16 +744,21 @@ app.post('/api/heatmap-multi', async (req, res) => {
 app.post('/api/monthly-report', async (req, res) => {
   const { month, year, compareMonth, compareYear } = req.body;
   const now = new Date();
-  const reportYear  = parseInt(year)  || now.getFullYear();
-  const reportMonth = parseInt(month) || now.getMonth(); // 0-indexed
-  const cmpYear     = parseInt(compareYear)  || (reportMonth===0 ? reportYear-1 : reportYear);
-  const cmpMonth    = parseInt(compareMonth) || (reportMonth===0 ? 11 : reportMonth-1);
+  // Use explicit parsing - month 0 (January) would fail with || fallback
+  const reportYear  = year  !== undefined ? parseInt(year)        : now.getFullYear();
+  const reportMonth = month !== undefined ? parseInt(month)       : now.getMonth();
+  const cmpYear     = compareYear  !== undefined ? parseInt(compareYear)  : (reportMonth===0 ? reportYear-1 : reportYear);
+  const cmpMonth    = compareMonth !== undefined ? parseInt(compareMonth) : (reportMonth===0 ? 11 : reportMonth-1);
 
-  // Date ranges
+  // Date ranges - cap mainTo at today if current/future month
   const mainFrom = new Date(reportYear, reportMonth, 1);
-  const mainTo   = new Date(reportYear, reportMonth+1, 0, 23, 59, 59);
+  const lastDayOfMonth = new Date(reportYear, reportMonth+1, 0, 23, 59, 59);
+  const mainTo = lastDayOfMonth > now ? now : lastDayOfMonth;
   const cmpFrom  = new Date(cmpYear, cmpMonth, 1);
   const cmpTo    = new Date(cmpYear, cmpMonth+1, 0, 23, 59, 59);
+  
+  console.log('Monthly report:', MONTH_NAMES[reportMonth], reportYear, '->', fmtDate(mainFrom), 'to', fmtDate(mainTo));
+  console.log('Compare:', MONTH_NAMES[cmpMonth], cmpYear, '->', fmtDate(cmpFrom), 'to', fmtDate(cmpTo));
   const fmtDate  = d => d.toISOString().split('T')[0];
   const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
@@ -819,13 +824,15 @@ app.post('/api/monthly-report', async (req, res) => {
     const mainFunnel = buildFunnel(mainPurchases);
     const cmpFunnel  = buildFunnel(cmpPurchases);
 
-    // 2. Clarity - both periods
+    // 2. Clarity - both periods (global project metrics, no URL filter)
+    console.log('Clarity requests:', fmtDate(mainFrom), '->', fmtDate(mainTo));
     const [mMetRes, mSessRes, cMetRes, cSessRes] = await Promise.all([
       fetch(`${clarityBase}&startDate=${fmtDate(mainFrom)}&endDate=${fmtDate(mainTo)}`, { headers: clarityHdr }),
-      fetch(`${clarityBase}&startDate=${fmtDate(mainFrom)}&endDate=${fmtDate(mainTo)}&type=session`, { headers: clarityHdr }),
+      fetch(`${clarityBase}&startDate=${fmtDate(mainFrom)}&endDate=${fmtDate(mainTo)}&numOfSessions=50`, { headers: clarityHdr }),
       fetch(`${clarityBase}&startDate=${fmtDate(cmpFrom)}&endDate=${fmtDate(cmpTo)}`, { headers: clarityHdr }),
-      fetch(`${clarityBase}&startDate=${fmtDate(cmpFrom)}&endDate=${fmtDate(cmpTo)}&type=session`, { headers: clarityHdr })
+      fetch(`${clarityBase}&startDate=${fmtDate(cmpFrom)}&endDate=${fmtDate(cmpTo)}&numOfSessions=50`, { headers: clarityHdr })
     ]);
+    console.log('Clarity status:', mMetRes.status, mSessRes.status, cMetRes.status, cSessRes.status);
     const mMet  = mMetRes.ok  ? await mMetRes.json()  : {};
     const mSess = mSessRes.ok ? await mSessRes.json()  : {};
     const cMet  = cMetRes.ok  ? await cMetRes.json()   : {};
@@ -921,7 +928,7 @@ Responde SOLO con JSON valido sin markdown:
   "monthLabel": "${MONTH_NAMES[reportMonth]} ${reportYear}",
   "compareLabel": "${MONTH_NAMES[cmpMonth]} ${cmpYear}"
 }` }],
-      'Analistar experto en CRO y revenue para ecommerce premium argentino. Responde ONLY con JSON valido.',
+      'Expert CRO analyst for premium Argentine e-commerce. You MUST respond with ONLY a valid JSON object. Start with { and end with }. No markdown, no backticks, no explanation outside JSON.',
       1500
     );
 
