@@ -802,15 +802,19 @@ app.post('/api/monthly-report', async (req, res) => {
     };
     const mFunnel=mkFunnel(mPurch), cFunnel=mkFunnel(cPurch);
 
-    // 4. Clarity both periods
+    // 4. Clarity both periods - use same API pattern as working heatmap endpoint
+    const clH2 = clarityHeaders();
     const [mMR, mSR, cMR, cSR] = await Promise.all([
-      fetch(`${clBase}&startDate=${fd(mFrom)}&endDate=${fd(mTo)}`, {headers:clH}),
-      fetch(`${clBase}&startDate=${fd(mFrom)}&endDate=${fd(mTo)}&numOfSessions=50`, {headers:clH}),
-      fetch(`${clBase}&startDate=${fd(cFrom)}&endDate=${fd(cTo)}`, {headers:clH}),
-      fetch(`${clBase}&startDate=${fd(cFrom)}&endDate=${fd(cTo)}&numOfSessions=50`, {headers:clH})
+      fetch(`${clBase}&startDate=${fd(mFrom)}&endDate=${fd(mTo)}`, {headers:clH2}),
+      fetch(`${clBase}&startDate=${fd(mFrom)}&endDate=${fd(mTo)}&type=session`, {headers:clH2}),
+      fetch(`${clBase}&startDate=${fd(cFrom)}&endDate=${fd(cTo)}`, {headers:clH2}),
+      fetch(`${clBase}&startDate=${fd(cFrom)}&endDate=${fd(cTo)}&type=session`, {headers:clH2})
     ]);
+    console.log('Clarity status:', mMR.status, mSR.status, cMR.status, cSR.status);
     const mMet=mMR.ok?await mMR.json():{}, mSes=mSR.ok?await mSR.json():{};
     const cMet=cMR.ok?await cMR.json():{}, cSes=cSR.ok?await cSR.json():{};
+    console.log('mMet keys:', Object.keys(mMet).slice(0,8).join(','));
+    console.log('mSes keys:', Object.keys(mSes).slice(0,8).join(','));
     const mSArr=mSes.sessions||mSes.data||[], cSArr=cSes.sessions||cSes.data||[];
     const mRage=mSArr.filter(s=>(s.rageClickCount||0)>0).length;
     const cRage=cSArr.filter(s=>(s.rageClickCount||0)>0).length;
