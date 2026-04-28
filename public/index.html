@@ -210,6 +210,26 @@ tr:hover td{background:rgba(255,255,255,0.012)}
 .intel-section-title{font-size:0.62rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.9rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.5rem}
 .intel-traffic{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem}
 .intel-traffic-insight{font-size:0.8rem;line-height:1.75;color:var(--text);margin-top:0.75rem;padding:0.75rem;background:rgba(255,255,255,0.03);border-radius:4px;border-left:2px solid var(--accent)}
+.mob-header{display:flex;align-items:center;gap:2rem;padding:1.25rem;background:var(--bg3);border-radius:var(--radius);margin-bottom:1.5rem;flex-wrap:wrap}
+.mob-score-wrap{display:flex;flex-direction:column;align-items:center;gap:0.4rem;flex-shrink:0}
+.mob-score-label{font-size:0.68rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;text-align:center}
+.mob-stats-row{display:flex;gap:0.75rem;flex-wrap:wrap;flex:1}
+.mob-stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem 1.1rem;text-align:center;min-width:80px;flex:1}
+.mob-stat-num{font-size:1.5rem;font-weight:200;font-family:'IBM Plex Mono',monospace;line-height:1;margin-bottom:3px}
+.mob-stat-label{font-size:0.6rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+.mob-section-title{font-size:0.62rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.9rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)}
+.mob-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.6rem;margin-bottom:1.5rem}
+.mob-point{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:0.8rem;transition:border-color 0.2s}
+.mob-point.critical{border-color:rgba(245,102,102,0.35);background:rgba(245,102,102,0.04)}
+.mob-point.issue{border-color:rgba(245,200,102,0.25);background:rgba(245,200,102,0.03)}
+.mob-point.pass{border-color:rgba(200,245,102,0.2)}
+.mob-point-header{display:flex;align-items:center;gap:0.4rem;margin-bottom:0.4rem}
+.mob-point-num{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--muted);min-width:14px}
+.mob-point-icon{font-size:0.9rem}
+.mob-point-impact{font-size:0.55rem;font-family:'IBM Plex Mono',monospace;font-weight:500;letter-spacing:0.08em;margin-left:auto;padding:1px 5px;border-radius:2px;background:rgba(255,255,255,0.05)}
+.mob-point-name{font-size:0.72rem;font-weight:500;line-height:1.3;margin-bottom:0.3rem}
+.mob-point-fix{font-size:0.62rem;color:var(--muted2);line-height:1.45;border-top:1px solid var(--border);padding-top:0.3rem;margin-top:0.3rem}
+.mob-issue-row{display:flex;align-items:flex-start;gap:0.75rem;padding:0.75rem 1rem;background:var(--bg3);border-left:3px solid var(--border2);border-radius:0 4px 4px 0;margin-bottom:0.4rem}
 @media(max-width:900px){.sidebar{width:48px;min-width:48px}.logo p,.logo h1,.nav-item span:last-child,.nav-section,.sidebar-footer{display:none}.nav-item{padding:0.6rem;justify-content:center}.two-col{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -1018,6 +1038,194 @@ async function runPDPAudit(){
   btn.disabled=false;
 }
 
+function renderMobileDiagnostic(raw){
+  if(!raw) return '<div class="empty">Sin datos</div>';
+
+  // Parse 15-point scores
+  const points = [];
+  const pointRegex = /\*\*(\d+)\.\s+([^*
+]+)\*\*[\s\S]*?(?:Status|Estado)[:\s]*(✅[^<
+]*|⚠️[^<
+]*|❌[^<
+]*)/gi;
+  const statusRegex = /(\d+)\.\s+\*\*([^*]+)\*\*/g;
+
+  // Extract structured data from text
+  const lines = raw.split('
+');
+  let healthScore = 0, passing = 0, total = 15;
+  const diagnosticPoints = [];
+  const quickWins = [];
+  const criticals = [];
+  const highs = [];
+  let revenueImpact = '';
+  let mobileScore = '';
+  let currentSection = '';
+
+  for(let i=0; i<lines.length; i++){
+    const l = lines[i];
+    // Detect section
+    if(/FRICTION SUMMARY|RESUMEN/i.test(l)) currentSection='summary';
+    if(/QUICK WIN/i.test(l)) currentSection='quickwins';
+    if(/REVENUE IMPACT/i.test(l)) currentSection='revenue';
+    if(/15.POINT DIAGNOSTIC/i.test(l)) currentSection='diagnostic';
+
+    // Extract health score X/15
+    const scoreM = l.match(/(\d+)\s*\/\s*15\s*passing/i);
+    if(scoreM) passing = parseInt(scoreM[1]);
+
+    // Extract revenue opportunity
+    if(/Monthly revenue opportunity|oportunidad.*mes/i.test(l)){
+      const m = l.match(/[\$€]\s*[\d,.]+/);
+      if(m) revenueImpact = m[0];
+    }
+
+    // Extract diagnostic points (numbered 1-15)
+    const pointM = l.match(/^\*\*(\d+)\.\s+([^*]+)\*\*/);
+    if(pointM && parseInt(pointM[1]) <= 15){
+      const num = parseInt(pointM[1]);
+      const name = pointM[2].trim();
+      // Look ahead for status
+      let status = 'unknown', impact = '', fix = '';
+      for(let j=i+1; j<Math.min(i+8, lines.length); j++){
+        const nl = lines[j];
+        if(/^-\s*Status[:\s]/i.test(nl)||/Status:/i.test(nl)){
+          if(/✅|Pass/i.test(nl)) status='pass';
+          else if(/❌|Critical/i.test(nl)) status='critical';
+          else if(/⚠|Issue/i.test(nl)) status='issue';
+        }
+        if(/^-\s*Impact[:\s]/i.test(nl)||/Impact:/i.test(nl)){
+          if(/High/i.test(nl)) impact='high';
+          else if(/Medium/i.test(nl)) impact='medium';
+          else if(/Low/i.test(nl)) impact='low';
+        }
+        if(/^-\s*Fix[:\s]/i.test(nl)){
+          fix = nl.replace(/^-\s*Fix[:\s]*/i,'').replace(/\*\*/g,'').trim().slice(0,120);
+        }
+        if(nl.match(/^\*\*\d+\./)) break;
+      }
+      diagnosticPoints.push({num, name, status, impact, fix});
+      if(status==='pass') passing++;
+    }
+
+    // Extract quick wins
+    if(/^\d+\.\s+\*\*/.test(l) && currentSection==='quickwins'){
+      const m = l.match(/\*\*([^*]+)\*\*/);
+      if(m) quickWins.push(m[1]);
+    }
+  }
+
+  // Recalculate if not found
+  if(passing === 0) passing = diagnosticPoints.filter(p=>p.status==='pass').length;
+  const scoreColor = passing>=12?'var(--good)':passing>=8?'var(--warn)':'var(--danger)';
+  const scoreLabel = passing>=12?'Buena experiencia':passing>=8?'Necesita mejoras':'Experiencia crítica';
+  const scoreArc = Math.round((passing/15)*283); // circumference of circle r=45
+
+  // Status icons and colors
+  const statusIcon = {pass:'✅', critical:'❌', issue:'⚠️', unknown:'◦'};
+  const statusColor = {pass:'var(--good)', critical:'var(--danger)', issue:'var(--warn)', unknown:'var(--muted)'};
+  const impactColor = {high:'var(--danger)', medium:'var(--warn)', low:'#66a8f5', '':'var(--muted)'};
+
+  // Group points by status
+  const criticalPts = diagnosticPoints.filter(p=>p.status==='critical');
+  const issuePts = diagnosticPoints.filter(p=>p.status==='issue');
+  const passPts = diagnosticPoints.filter(p=>p.status==='pass');
+
+  let html = '';
+
+  // ── HEADER SCORE DASHBOARD ──────────────────────────────────────────────────
+  html += `<div class="mob-header">
+    <div class="mob-score-wrap">
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="45" fill="none" stroke="var(--bg3)" stroke-width="8"/>
+        <circle cx="60" cy="60" r="45" fill="none" stroke="${scoreColor}" stroke-width="8"
+          stroke-dasharray="${scoreArc} 283" stroke-dashoffset="71"
+          stroke-linecap="round" transform="rotate(-90 60 60)"
+          style="transition:stroke-dasharray 1s ease"/>
+        <text x="60" y="56" text-anchor="middle" fill="${scoreColor}" font-family="IBM Plex Mono" font-size="22" font-weight="400">${passing}</text>
+        <text x="60" y="72" text-anchor="middle" fill="var(--muted)" font-family="IBM Plex Mono" font-size="11">/15</text>
+      </svg>
+      <div class="mob-score-label" style="color:${scoreColor}">${scoreLabel}</div>
+    </div>
+    <div class="mob-stats-row">
+      <div class="mob-stat" style="border-color:rgba(245,102,102,0.3)">
+        <div class="mob-stat-num" style="color:var(--danger)">${criticalPts.length}</div>
+        <div class="mob-stat-label">❌ Críticos</div>
+      </div>
+      <div class="mob-stat" style="border-color:rgba(245,200,102,0.3)">
+        <div class="mob-stat-num" style="color:var(--warn)">${issuePts.length}</div>
+        <div class="mob-stat-label">⚠️ Issues</div>
+      </div>
+      <div class="mob-stat" style="border-color:rgba(200,245,102,0.3)">
+        <div class="mob-stat-num" style="color:var(--good)">${passPts.length}</div>
+        <div class="mob-stat-label">✅ OK</div>
+      </div>
+      ${revenueImpact?`<div class="mob-stat" style="border-color:rgba(200,245,102,0.3)">
+        <div class="mob-stat-num" style="color:var(--good);font-size:1rem">${revenueImpact}</div>
+        <div class="mob-stat-label">💰 oportunidad</div>
+      </div>`:''}
+    </div>
+  </div>`;
+
+  // ── 15-POINT VISUAL GRID ────────────────────────────────────────────────────
+  if(diagnosticPoints.length > 0){
+    html += `<div class="mob-section-title">◉ diagnóstico · 15 puntos</div>`;
+    html += `<div class="mob-grid">`;
+    for(const p of diagnosticPoints){
+      const sc = statusColor[p.status] || 'var(--muted)';
+      const ic = statusIcon[p.status] || '◦';
+      const imp = p.impact;
+      html += `<div class="mob-point ${p.status}">
+        <div class="mob-point-header">
+          <span class="mob-point-num">${p.num}</span>
+          <span class="mob-point-icon">${ic}</span>
+          ${imp?`<span class="mob-point-impact" style="color:${impactColor[imp]}">${imp.toUpperCase()}</span>`:''}
+        </div>
+        <div class="mob-point-name" style="color:${sc}">${p.name}</div>
+        ${p.fix?`<div class="mob-point-fix">→ ${p.fix}</div>`:''}
+      </div>`;
+    }
+    html += '</div>';
+  } else {
+    // Fallback: render formatted text but with visual sections
+    html += renderMobileFromText(raw);
+    return `<div class="ai-result">${html}</div>`;
+  }
+
+  // ── PRIORITY MATRIX ─────────────────────────────────────────────────────────
+  if(criticalPts.length || issuePts.length){
+    html += `<div class="mob-section-title" style="margin-top:1.5rem">🔴 problemas por prioridad</div>`;
+    html += '<div style="display:flex;flex-direction:column;gap:0.5rem">';
+    for(const p of [...criticalPts, ...issuePts]){
+      const sc = statusColor[p.status];
+      html += `<div class="mob-issue-row" style="border-left-color:${sc}">
+        <span style="font-size:0.9rem">${statusIcon[p.status]}</span>
+        <div style="flex:1">
+          <div style="font-size:0.78rem;font-weight:500">${p.num}. ${p.name}</div>
+          ${p.fix?`<div style="font-size:0.7rem;color:var(--muted2);margin-top:3px">→ ${p.fix}</div>`:''}
+        </div>
+        <span class="mob-point-impact" style="color:${impactColor[p.impact]};flex-shrink:0">${(p.impact||'').toUpperCase()}</span>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  // ── FULL ANALYSIS (collapsible) ─────────────────────────────────────────────
+  html += `<details style="margin-top:1.5rem">
+    <summary style="cursor:pointer;font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;padding:0.5rem 0;border-top:1px solid var(--border)">
+      ▶ ver análisis completo
+    </summary>
+    <div class="ai-body" style="margin-top:1rem">${fmtAI(raw)}</div>
+  </details>`;
+
+  return `<div class="ai-result">${html}</div>`;
+}
+
+function renderMobileFromText(raw){
+  // Visual sections from raw text when structured parse fails
+  return `<div class="ai-body">${fmtAI(raw)}</div>`;
+}
+
 function fmtAI(raw){
   // ── extract scores ────────────────────────────────────────────────────────
   function extractScores(t){
@@ -1224,7 +1432,7 @@ async function runMobileDiagnostic(){
       complaints:document.getElementById('mobileComplaints').value
     });
     if(data.error)throw new Error(data.error);
-    result.innerHTML=`<div class="ai-result"><div class="ai-content">${fmtAI(data.analysis)}</div></div>`;
+    result.innerHTML = renderMobileDiagnostic(data.analysis);
     log('mobileDot','mobileLog','diagnóstico completado · 15-point framework',false);
   }catch(e){result.innerHTML=`<div class="log-bar"><span class="pulse idle"></span>error: ${e.message}</div>`;log('mobileDot','mobileLog','error',false)}
   btn.disabled=false;
