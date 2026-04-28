@@ -1678,13 +1678,15 @@ renderCompetitorsList();
       ysel.innerHTML += `<option value="${y}">${y}</option>`;
       cysel.innerHTML += `<option value="${y}">${y}</option>`;
     }
-    // Default: current month vs previous
-    document.getElementById('reportMonth').value = now.getMonth();
-    document.getElementById('reportYear').value = now.getFullYear();
-    const pm = now.getMonth()===0?11:now.getMonth()-1;
-    const py = now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
-    document.getElementById('reportCmpMonth').value = pm;
-    document.getElementById('reportCmpYear').value = py;
+    // Default: last COMPLETE month vs the one before
+    const lastMonth = now.getMonth()===0 ? 11 : now.getMonth()-1;
+    const lastYear  = now.getMonth()===0 ? now.getFullYear()-1 : now.getFullYear();
+    const prevMonth = lastMonth===0 ? 11 : lastMonth-1;
+    const prevYear  = lastMonth===0 ? lastYear-1 : lastYear;
+    document.getElementById('reportMonth').value = lastMonth;
+    document.getElementById('reportYear').value  = lastYear;
+    document.getElementById('reportCmpMonth').value = prevMonth;
+    document.getElementById('reportCmpYear').value  = prevYear;
   }
 })();
 
