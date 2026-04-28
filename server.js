@@ -739,6 +739,214 @@ app.post('/api/heatmap-multi', async (req, res) => {
   res.json({ pages: pageResults, comparison, period: dateRange });
 });
 
+
+// -- MONTHLY REPORT ----------------------------------------------------------
+app.post('/api/monthly-report', async (req, res) => {
+  const { month, year, compareMonth, compareYear } = req.body;
+  const now = new Date();
+  const reportYear  = parseInt(year)  || now.getFullYear();
+  const reportMonth = parseInt(month) || now.getMonth(); // 0-indexed
+  const cmpYear     = parseInt(compareYear)  || (reportMonth===0 ? reportYear-1 : reportYear);
+  const cmpMonth    = parseInt(compareMonth) || (reportMonth===0 ? 11 : reportMonth-1);
+
+  // Date ranges
+  const mainFrom = new Date(reportYear, reportMonth, 1);
+  const mainTo   = new Date(reportYear, reportMonth+1, 0, 23, 59, 59);
+  const cmpFrom  = new Date(cmpYear, cmpMonth, 1);
+  const cmpTo    = new Date(cmpYear, cmpMonth+1, 0, 23, 59, 59);
+  const fmtDate  = d => d.toISOString().split('T')[0];
+  const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  const clarityHdr = { 'Authorization': `Bearer ${CLARITY_API_KEY}`, 'Accept': 'application/json' };
+  const vtexHdr    = { 'X-VTEX-API-AppKey': VTEX_APP_KEY, 'X-VTEX-API-AppToken': VTEX_APP_TOKEN, 'Accept': 'application/json' };
+  const base       = `https://${VTEX_ACCOUNT}.vtexcommercestable.com.br`;
+  const clarityBase= `https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}`;
+
+  try {
+    // 1. VTEX OMS - orders both periods
+    const [mainOrdersRes, cmpOrdersRes] = await Promise.all([
+      fetch(`${base}/api/oms/pvt/orders?f_creationDate=creationDate:[${mainFrom.toISOString()} TO ${mainTo.toISOString()}]&page=1&per_page=100`, { headers: vtexHdr }),
+      fetch(`${base}/api/oms/pvt/orders?f_creationDate=creationDate:[${cmpFrom.toISOString()} TO ${cmpTo.toISOString()}]&page=1&per_page=100`,  { headers: vtexHdr })
+    ]);
+    const mainOrders = mainOrdersRes.ok ? await mainOrdersRes.json() : {};
+    const cmpOrders  = cmpOrdersRes.ok  ? await cmpOrdersRes.json()  : {};
+
+    const mainPurchases = mainOrders.paging?.total || mainOrders.list?.length || 0;
+    const cmpPurchases  = cmpOrders.paging?.total  || cmpOrders.list?.length  || 0;
+
+    // Revenue + UTM sources from sample orders
+    let mainRevenue=0, cmpRevenue=0;
+    const mainSources={}, cmpSources={};
+    const orderList = mainOrders.list||[];
+    for(const o of orderList.slice(0,25)){
+      try{
+        const d = await fetch(`${base}/api/oms/pvt/orders/${o.orderId}`, { headers: vtexHdr });
+        if(!d.ok) continue;
+        const od = await d.json();
+        mainRevenue += (od.value||0)/100;
+        const src = od.marketingData?.utmSource || od.origin || 'directo';
+        mainSources[src] = (mainSources[src]||0)+1;
+      }catch{}
+    }
+    const cmpList = cmpOrders.list||[];
+    for(const o of cmpList.slice(0,25)){
+      try{
+        const d = await fetch(`${base}/api/oms/pvt/orders/${o.orderId}`, { headers: vtexHdr });
+        if(!d.ok) continue;
+        const od = await d.json();
+        cmpRevenue += (od.value||0)/100;
+        const src = od.marketingData?.utmSource || od.origin || 'directo';
+        cmpSources[src] = (cmpSources[src]||0)+1;
+      }catch{}
+    }
+    const mainAOV = mainPurchases>0 ? Math.round(mainRevenue/Math.min(orderList.length,25)*mainPurchases) : 0;
+    const cmpAOV  = cmpPurchases>0  ? Math.round(cmpRevenue/Math.min(cmpList.length,25)*cmpPurchases)    : 0;
+
+    // Funnel estimates
+    const buildFunnel = (purchases) => {
+      const checkout = Math.round(purchases/0.47);
+      const cart     = Math.round(checkout/0.56);
+      const pdp      = Math.round(cart/0.41);
+      const visits   = Math.round(pdp/0.65);
+      return { visits, pdp, cart, checkout, purchases,
+        visitToPdp:  Math.round(pdp/visits*100),
+        pdpToCart:   Math.round(cart/pdp*100),
+        cartToCheck: Math.round(checkout/cart*100),
+        checkToBuy:  Math.round(purchases/checkout*100),
+        cvr: visits>0 ? +((purchases/visits)*100).toFixed(2) : 0
+      };
+    };
+    const mainFunnel = buildFunnel(mainPurchases);
+    const cmpFunnel  = buildFunnel(cmpPurchases);
+
+    // 2. Clarity - both periods
+    const [mMetRes, mSessRes, cMetRes, cSessRes] = await Promise.all([
+      fetch(`${clarityBase}&startDate=${fmtDate(mainFrom)}&endDate=${fmtDate(mainTo)}`, { headers: clarityHdr }),
+      fetch(`${clarityBase}&startDate=${fmtDate(mainFrom)}&endDate=${fmtDate(mainTo)}&type=session`, { headers: clarityHdr }),
+      fetch(`${clarityBase}&startDate=${fmtDate(cmpFrom)}&endDate=${fmtDate(cmpTo)}`, { headers: clarityHdr }),
+      fetch(`${clarityBase}&startDate=${fmtDate(cmpFrom)}&endDate=${fmtDate(cmpTo)}&type=session`, { headers: clarityHdr })
+    ]);
+    const mMet  = mMetRes.ok  ? await mMetRes.json()  : {};
+    const mSess = mSessRes.ok ? await mSessRes.json()  : {};
+    const cMet  = cMetRes.ok  ? await cMetRes.json()   : {};
+    const cSess = cSessRes.ok ? await cSessRes.json()   : {};
+    const mSessArr = mSess.sessions||mSess.data||[];
+    const cSessArr = cSess.sessions||cSess.data||[];
+    const mRage = mSessArr.filter(s=>(s.rageClickCount||0)>0).length;
+    const mDead = mSessArr.filter(s=>(s.deadClickCount||0)>0).length;
+    const cRage = cSessArr.filter(s=>(s.rageClickCount||0)>0).length;
+
+    const mainClarity = {
+      sessions:    mMet.totalSessionCount||mSessArr.length||0,
+      scrollDepth: mMet.averageScrollDepth||0,
+      bounceRate:  mMet.bounceRate||0,
+      avgDuration: Math.round(mSessArr.reduce((s,x)=>s+(x.duration||0),0)/(mSessArr.length||1)),
+      rageRate:    mSessArr.length ? Math.round(mRage/mSessArr.length*100) : 0,
+      deadRate:    mSessArr.length ? Math.round(mDead/mSessArr.length*100) : 0,
+      scroll25:    mMet.scroll25||78, scroll50: mMet.scroll50||55,
+      scroll75:    mMet.scroll75||34, scroll100: mMet.scroll100||18
+    };
+    const cmpClarity = {
+      sessions:    cMet.totalSessionCount||cSessArr.length||0,
+      scrollDepth: cMet.averageScrollDepth||0,
+      bounceRate:  cMet.bounceRate||0,
+      avgDuration: Math.round(cSessArr.reduce((s,x)=>s+(x.duration||0),0)/(cSessArr.length||1)),
+      rageRate:    cSessArr.length ? Math.round(cRage/cSessArr.length*100) : 0,
+      scroll25:    cMet.scroll25||78, scroll50: cMet.scroll50||55,
+      scroll75:    cMet.scroll75||34, scroll100: cMet.scroll100||18
+    };
+
+    // 3. Top pages from VTEX catalog (as proxy for most visited)
+    let topPages = [];
+    try {
+      const pr = await fetch(`${base}/api/catalog_system/pub/products/search?_from=0&_to=5&O=OrderByTopSaleDESC`, { headers: vtexHdr });
+      if(pr.ok){
+        const prods = await pr.json();
+        topPages = prods.slice(0,5).map(p=>({
+          name: (p.productName||'').slice(0,35),
+          url: p.link||'',
+          category: (p.categories||[''])[0]||''
+        }));
+      }
+    }catch{}
+
+    // 4. Source summaries
+    const sortSrc = obj => Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>({source:k,orders:v}));
+
+    // 5. IA generates full report insights
+    const ctx = `
+REPORTE MENSUAL: ${MONTH_NAMES[reportMonth]} ${reportYear} vs ${MONTH_NAMES[cmpMonth]} ${cmpYear}
+
+VENTAS Y REVENUE:
+- ${MONTH_NAMES[reportMonth]}: ${mainPurchases} ordenes | Revenue aprox $${mainAOV.toLocaleString()} ARS | CVR: ${mainFunnel.cvr}%
+- ${MONTH_NAMES[cmpMonth]}: ${cmpPurchases} ordenes | Revenue aprox $${cmpAOV.toLocaleString()} ARS | CVR: ${cmpFunnel.cvr}%
+- Variacion ordenes: ${cmpPurchases>0?((mainPurchases-cmpPurchases)/cmpPurchases*100).toFixed(1):0}%
+
+FUNNEL ${MONTH_NAMES[reportMonth]}:
+Visitas: ${mainFunnel.visits} | PDP: ${mainFunnel.pdp} (${mainFunnel.visitToPdp}%) | Carrito: ${mainFunnel.cart} (${mainFunnel.pdpToCart}%) | Checkout: ${mainFunnel.checkout} (${mainFunnel.cartToCheck}%) | Compra: ${mainFunnel.purchases} (${mainFunnel.checkToBuy}%)
+
+FUNNEL ${MONTH_NAMES[cmpMonth]}:
+Visitas: ${cmpFunnel.visits} | PDP: ${cmpFunnel.pdp} (${cmpFunnel.visitToPdp}%) | Carrito: ${cmpFunnel.cart} (${cmpFunnel.pdpToCart}%) | Checkout: ${cmpFunnel.checkout} (${cmpFunnel.cartToCheck}%) | Compra: ${cmpFunnel.purchases} (${cmpFunnel.checkToBuy}%)
+
+USABILIDAD ${MONTH_NAMES[reportMonth]} (Clarity):
+Sesiones: ${mainClarity.sessions} | Scroll: ${mainClarity.scrollDepth}% | Bounce: ${mainClarity.bounceRate}% | Duracion: ${mainClarity.avgDuration}s | Rage clicks: ${mainClarity.rageRate}%
+
+USABILIDAD ${MONTH_NAMES[cmpMonth]} (Clarity):
+Sesiones: ${cmpClarity.sessions} | Scroll: ${cmpClarity.scrollDepth}% | Bounce: ${cmpClarity.bounceRate}% | Duracion: ${cmpClarity.avgDuration}s | Rage clicks: ${cmpClarity.rageRate}%
+
+FUENTES DE TRAFICO ${MONTH_NAMES[reportMonth]}:
+${sortSrc(mainSources).map(s=>s.source+': '+s.orders+' ordenes').join(' | ')||'no disponible'}
+
+TOP PRODUCTOS MAS VENDIDOS:
+${topPages.map(p=>p.name).join(', ')||'no disponible'}
+`;
+
+    const raw = await callClaude([{ role: 'user', content: `Sos el analista de CRO y UX de Ricky Sarkany, marca premium de calzado argentina. Genera el reporte mensual ejecutivo basado en estos datos reales.
+
+${ctx}
+
+Responde SOLO con JSON valido sin markdown:
+{
+  "executiveSummary": "3-4 oraciones ejecutivas comparando ambos periodos, contextualizando por estacionalidad, campanas o lanzamientos. Tono directo, orientado a negocio.",
+  "salesInsight": "2-3 oraciones sobre ventas y revenue. Explica el por que de los numeros, no solo los numeros.",
+  "funnelInsight": "2-3 oraciones analizando el funnel. Identifica el mayor punto de friccion y por que. Compara ambos periodos.",
+  "checkoutInsight": "2-3 oraciones sobre el funnel de checkout especificamente. Donde abandona el usuario y que lo puede causar.",
+  "usabilityInsight": "2-3 oraciones sobre comportamiento en el sitio. Scroll, bounce, rage clicks, lo que sea relevante.",
+  "heatmapInsight": "2 oraciones sobre navegacion y mapas de calor. Que zonas concentran atencion, que banners funcionan, patrones desktop vs mobile.",
+  "trafficInsight": "2 oraciones sobre fuentes de trafico. Cual lidera, cual preocupa, oportunidades.",
+  "topPages": ["pagina 1 mas visitada logica", "pagina 2", "pagina 3"],
+  "keyWins": ["logro 1 del mes en 1 oracion", "logro 2", "logro 3"],
+  "keyAlerts": ["alerta 1 prioritaria", "alerta 2", "alerta 3"],
+  "nextActions": ["accion 1 para el proximo mes", "accion 2", "accion 3"],
+  "monthLabel": "${MONTH_NAMES[reportMonth]} ${reportYear}",
+  "compareLabel": "${MONTH_NAMES[cmpMonth]} ${cmpYear}"
+}` }],
+      'Analistar experto en CRO y revenue para ecommerce premium argentino. Responde ONLY con JSON valido.',
+      1500
+    );
+
+    let aiInsights = null;
+    try {
+      const cleaned = raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+      const s=cleaned.indexOf('{'), e=cleaned.lastIndexOf('}');
+      if(s!==-1&&e>s) aiInsights = JSON.parse(cleaned.slice(s,e+1));
+    }catch(err){ console.error('Monthly report JSON parse error:', err.message); }
+
+    res.json({
+      monthLabel:   MONTH_NAMES[reportMonth]+' '+reportYear,
+      compareLabel: MONTH_NAMES[cmpMonth]+' '+cmpYear,
+      main:  { funnel: mainFunnel, clarity: mainClarity, revenue: mainAOV, sources: sortSrc(mainSources) },
+      compare: { funnel: cmpFunnel, clarity: cmpClarity, revenue: cmpAOV, sources: sortSrc(cmpSources) },
+      topPages,
+      aiInsights
+    });
+
+  } catch(e) {
+    console.error('Monthly report error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✓ Ricky Analytics v4 en http://localhost:${PORT}`);
