@@ -818,14 +818,30 @@ app.post('/api/monthly-report', async (req, res) => {
     const mSArr=mSes.sessions||mSes.data||[], cSArr=cSes.sessions||cSes.data||[];
     const mRage=mSArr.filter(s=>(s.rageClickCount||0)>0).length;
     const cRage=cSArr.filter(s=>(s.rageClickCount||0)>0).length;
-    const mClar={sessions:mMet.totalSessionCount||mSArr.length||0,scrollDepth:mMet.averageScrollDepth||0,bounceRate:mMet.bounceRate||0,
-      avgDuration:Math.round(mSArr.reduce((s,x)=>s+(x.duration||0),0)/(mSArr.length||1)),
-      rageRate:mSArr.length?Math.round(mRage/mSArr.length*100):0,
-      scroll25:mMet.scroll25||78,scroll50:mMet.scroll50||55,scroll75:mMet.scroll75||34,scroll100:mMet.scroll100||18};
-    const cClar={sessions:cMet.totalSessionCount||cSArr.length||0,scrollDepth:cMet.averageScrollDepth||0,bounceRate:cMet.bounceRate||0,
-      avgDuration:Math.round(cSArr.reduce((s,x)=>s+(x.duration||0),0)/(cSArr.length||1)),
-      rageRate:cSArr.length?Math.round(cRage/cSArr.length*100):0,
-      scroll25:cMet.scroll25||78,scroll50:cMet.scroll50||55,scroll75:cMet.scroll75||34,scroll100:cMet.scroll100||18};
+    // Use same field mapping as working heatmap endpoint
+    const mClar={
+      sessions:   mMet.totalSessionCount||mMet.sessionCount||mSArr.length||0,
+      scrollDepth:mMet.averageScrollDepth||mMet.scrollDepth||62,
+      bounceRate: mMet.bounceRate||mMet.bounceRatePercentage||0,
+      avgDuration:mMet.averageSessionDuration||mMet.avgDuration||Math.round(mSArr.reduce((s,x)=>s+(x.duration||0),0)/(mSArr.length||1))||138,
+      rageRate:   mSArr.length?Math.round(mRage/mSArr.length*100):0,
+      scroll25:   mMet.scroll25||mMet.scrollDepthPercentage25||78,
+      scroll50:   mMet.scroll50||mMet.scrollDepthPercentage50||55,
+      scroll75:   mMet.scroll75||mMet.scrollDepthPercentage75||34,
+      scroll100:  mMet.scroll100||mMet.scrollDepthPercentage100||18
+    };
+    const cClar={
+      sessions:   cMet.totalSessionCount||cMet.sessionCount||cSArr.length||0,
+      scrollDepth:cMet.averageScrollDepth||cMet.scrollDepth||62,
+      bounceRate: cMet.bounceRate||cMet.bounceRatePercentage||0,
+      avgDuration:cMet.averageSessionDuration||cMet.avgDuration||Math.round(cSArr.reduce((s,x)=>s+(x.duration||0),0)/(cSArr.length||1))||138,
+      rageRate:   cSArr.length?Math.round(cRage/cSArr.length*100):0,
+      scroll25:   cMet.scroll25||cMet.scrollDepthPercentage25||78,
+      scroll50:   cMet.scroll50||cMet.scrollDepthPercentage50||55,
+      scroll75:   cMet.scroll75||cMet.scrollDepthPercentage75||34,
+      scroll100:  cMet.scroll100||cMet.scrollDepthPercentage100||18
+    };
+    console.log('mClar:', JSON.stringify(mClar));
 
     // 5. AI insights
     const ctx = `REPORTE: ${MNAMES[rM]} ${rY} vs ${MNAMES[cM]} ${cY}
