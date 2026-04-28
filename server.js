@@ -779,33 +779,40 @@ app.post('/api/monthly-report', async (req, res) => {
     const mainPurchases = mainOrders.paging?.total || mainOrders.list?.length || 0;
     const cmpPurchases  = cmpOrders.paging?.total  || cmpOrders.list?.length  || 0;
 
-    // Revenue + UTM sources from sample orders
-    let mainRevenue=0, cmpRevenue=0;
+    // Revenue + UTM sources - fetch only 8 orders in parallel (not sequential) to avoid timeout
     const mainSources={}, cmpSources={};
     const orderList = mainOrders.list||[];
-    for(const o of orderList.slice(0,25)){
-      try{
-        const d = await fetch(`${base}/api/oms/pvt/orders/${o.orderId}`, { headers: vtexHdr });
-        if(!d.ok) continue;
-        const od = await d.json();
-        mainRevenue += (od.value||0)/100;
-        const src = od.marketingData?.utmSource || od.origin || 'directo';
-        mainSources[src] = (mainSources[src]||0)+1;
-      }catch{}
-    }
-    const cmpList = cmpOrders.list||[];
-    for(const o of cmpList.slice(0,25)){
-      try{
-        const d = await fetch(`${base}/api/oms/pvt/orders/${o.orderId}`, { headers: vtexHdr });
-        if(!d.ok) continue;
-        const od = await d.json();
-        cmpRevenue += (od.value||0)/100;
-        const src = od.marketingData?.utmSource || od.origin || 'directo';
-        cmpSources[src] = (cmpSources[src]||0)+1;
-      }catch{}
-    }
-    const mainAOV = mainPurchases>0 ? Math.round(mainRevenue/Math.min(orderList.length,25)*mainPurchases) : 0;
-    const cmpAOV  = cmpPurchases>0  ? Math.round(cmpRevenue/Math.min(cmpList.length,25)*cmpPurchases)    : 0;
+    const cmpList   = cmpOrders.list||[];
+
+    const fetchOrderDetail = async (orderId) => {
+      try {
+        const d = await fetch(`${base}/api/oms/pvt/orders/${orderId}`, { headers: vtexHdr });
+        return d.ok ? await d.json() : null;
+      } catch { return null; }
+    };
+
+    // Parallel fetch - max 8 orders each period
+    const [mainDetails, cmpDetails] = await Promise.all([
+      Promise.all(orderList.slice(0,8).map(o => fetchOrderDetail(o.orderId))),
+      Promise.all(cmpList.slice(0,8).map(o => fetchOrderDetail(o.orderId)))
+    ]);
+
+    let mainRevenue = 0, cmpRevenue = 0;
+    mainDetails.filter(Boolean).forEach(od => {
+      mainRevenue += (od.value||0)/100;
+      const src = od.marketingData?.utmSource || od.marketingData?.utmCampaign || od.origin || 'directo';
+      mainSources[src] = (mainSources[src]||0)+1;
+    });
+    cmpDetails.filter(Boolean).forEach(od => {
+      cmpRevenue += (od.value||0)/100;
+      const src = od.marketingData?.utmSource || od.marketingData?.utmCampaign || od.origin || 'directo';
+      cmpSources[src] = (cmpSources[src]||0)+1;
+    });
+
+    const mainDetCount = mainDetails.filter(Boolean).length || 1;
+    const cmpDetCount  = cmpDetails.filter(Boolean).length  || 1;
+    const mainAOV = mainPurchases>0 ? Math.round((mainRevenue/mainDetCount)) : 0;
+    const cmpAOV  = cmpPurchases>0  ? Math.round((cmpRevenue/cmpDetCount))   : 0;
 
     // Funnel estimates
     const buildFunnel = (purchases) => {
@@ -929,7 +936,7 @@ Responde SOLO con JSON valido sin markdown:
   "compareLabel": "${MONTH_NAMES[cmpMonth]} ${cmpYear}"
 }` }],
       'Expert CRO analyst for premium Argentine e-commerce. You MUST respond with ONLY a valid JSON object. Start with { and end with }. No markdown, no backticks, no explanation outside JSON.',
-      1500
+      1200
     );
 
     let aiInsights = null;
