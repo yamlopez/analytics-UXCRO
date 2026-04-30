@@ -321,6 +321,32 @@ tr:hover td{background:rgba(255,255,255,0.012)}
 .rpt-cover-period{font-size:1.2rem;font-weight:300;color:var(--accent);margin-top:1.5rem;font-family:'IBM Plex Mono',monospace}
 .rpt-divider{height:1px;background:var(--border);margin:0.5rem 0 1.5rem}
 .rpt-page-header{font-size:0.58rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:1.5rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.sp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0.75rem;margin-bottom:1.5rem}
+.sp-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;position:relative;overflow:hidden}
+.sp-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.sp-card.sp-good::before{background:var(--good)}
+.sp-card.sp-mid::before{background:var(--warn)}
+.sp-card.sp-bad::before{background:var(--danger)}
+.sp-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.75rem;gap:0.5rem}
+.sp-type-badge{font-size:0.58rem;font-family:'IBM Plex Mono',monospace;padding:2px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:0.08em;flex-shrink:0}
+.sp-type-home{background:rgba(102,168,245,0.15);color:#66a8f5;border:1px solid rgba(102,168,245,0.25)}
+.sp-type-promo{background:rgba(245,200,102,0.12);color:var(--warn);border:1px solid rgba(245,200,102,0.22)}
+.sp-type-faq{background:rgba(102,245,200,0.12);color:#66f5c8;border:1px solid rgba(102,245,200,0.22)}
+.sp-type-collection{background:rgba(200,245,102,0.1);color:var(--accent);border:1px solid rgba(200,245,102,0.2)}
+.sp-type-store{background:rgba(245,102,245,0.1);color:#f566f5;border:1px solid rgba(245,102,245,0.2)}
+.sp-type-page{background:rgba(150,150,150,0.1);color:var(--muted2);border:1px solid rgba(150,150,150,0.2)}
+.sp-score-wrap{text-align:right;flex-shrink:0}
+.sp-score-num{font-size:1.5rem;font-weight:200;font-family:'IBM Plex Mono',monospace;line-height:1}
+.sp-score-bar{width:50px;background:var(--bg4);border-radius:2px;height:3px;overflow:hidden;margin-top:4px}
+.sp-score-fill{height:3px;border-radius:2px;transition:width 0.5s}
+.sp-label{font-size:0.82rem;font-weight:500;margin-bottom:0.2rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-url{font-size:0.6rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:0.75rem}
+.sp-fields{display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;margin-bottom:0.6rem}
+.sp-field{background:var(--bg3);border-radius:3px;padding:0.35rem 0.5rem}
+.sp-field-label{font-size:0.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'IBM Plex Mono',monospace}
+.sp-field-val{font-size:0.72rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-field-val.good{color:var(--good)}.sp-field-val.warn{color:var(--warn)}.sp-field-val.bad{color:var(--danger)}
+.sp-issues{display:flex;flex-wrap:wrap;gap:3px}
 @media(max-width:900px){.sidebar{width:48px;min-width:48px}.logo p,.logo h1,.nav-item span:last-child,.nav-section,.sidebar-footer{display:none}.nav-item{padding:0.6rem;justify-content:center}.two-col{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -341,7 +367,6 @@ tr:hover td{background:rgba(255,255,255,0.012)}
   <div class="nav-item" onclick="switchTab('mobile',this)"><span>◐</span><span>Mobile Diagnostic</span></div>
   <div class="nav-item" onclick="switchTab('competitors',this)"><span>⊕</span><span>Competidores</span></div>
   <div class="nav-section">inteligencia</div>
-  <div class="nav-item" onclick="switchTab('intel',this)"><span>◆</span><span>Intelligence</span></div>
   <div class="nav-item" onclick="switchTab('report',this)"><span>📋</span><span>Reporte Mensual</span></div>
   <div class="sidebar-footer"><p>VTEX API<br>Microsoft Clarity<br>Claude AI<br>© Ricky 2025</p></div>
 </nav>
@@ -358,12 +383,24 @@ tr:hover td{background:rgba(255,255,255,0.012)}
 <!-- SEO TAB -->
 <div id="tab-seo" class="tab-content active">
   <div class="topbar">
-    <div><div class="topbar-title">Análisis SEO de Productos</div><div class="topbar-sub">VTEX Catalog API · títulos · meta desc · imágenes · contenido</div></div>
+    <div>
+      <div class="topbar-title">Análisis SEO</div>
+      <div class="topbar-sub" id="seoSubtitle">VTEX Catalog API · títulos · meta desc · imágenes · contenido</div>
+    </div>
     <div class="topbar-actions">
-      <label>límite</label>
-      <input type="number" id="seoLimit" value="50" min="1" max="50" style="width:64px">
-      <button class="btn primary" id="seoBtn" onclick="runSEO()">▶ analizar</button>
-      <button class="btn" id="seoExportBtn" onclick="exportSEO()" style="display:none">↓ CSV</button>
+      <div class="hm-mode-toggle">
+        <button class="hm-mode-btn active" id="seoModeProducts" onclick="setSeoMode('products')">◈ productos</button>
+        <button class="hm-mode-btn" id="seoModePages" onclick="setSeoMode('pages')">◉ páginas del sitio</button>
+      </div>
+      <div id="seoProductControls" style="display:flex;gap:0.5rem;align-items:center">
+        <label>límite</label>
+        <input type="number" id="seoLimit" value="50" min="1" max="50" style="width:64px">
+        <button class="btn primary" id="seoBtn" onclick="runSEO()">▶ analizar</button>
+        <button class="btn" id="seoExportBtn" onclick="exportSEO()" style="display:none">↓ CSV</button>
+      </div>
+      <div id="seoPagesControls" style="display:none;gap:0.5rem;align-items:center">
+        <button class="btn primary" id="seoPagesBtn" onclick="runSEOPages()">▶ crawlear sitio</button>
+      </div>
     </div>
   </div>
   <div class="content">
@@ -385,6 +422,18 @@ tr:hover td{background:rgba(255,255,255,0.012)}
       <button class="fbtn" onclick="seoFilter('no_img',this)">sin imagen</button>
     </div>
     <div class="table-wrap" id="seoTable"><div class="empty">presioná analizar para comenzar</div></div>
+
+    <!-- PAGES SEO SECTION -->
+    <div id="seoPagesSection" style="display:none">
+      <div class="stats-grid" style="margin-bottom:1.5rem">
+        <div class="stat-card"><div class="stat-label">páginas analizadas</div><div class="stat-val" id="sp1">—</div></div>
+        <div class="stat-card"><div class="stat-label">score promedio</div><div class="stat-val" id="sp2">—</div></div>
+        <div class="stat-card"><div class="stat-label">críticas</div><div class="stat-val bad" id="sp3">—</div></div>
+        <div class="stat-card"><div class="stat-label">ok ≥80</div><div class="stat-val good" id="sp4">—</div></div>
+      </div>
+      <div class="log-bar"><span class="pulse idle" id="spDot"></span><span id="spLog">presioná "crawlear sitio" para analizar páginas estáticas</span></div>
+      <div id="seoPagesGrid" class="sp-grid"></div>
+    </div>
   </div>
 </div>
 
@@ -724,28 +773,6 @@ tr:hover td{background:rgba(255,255,255,0.012)}
   </div>
 </div>
 
-
-<!-- INTELLIGENCE TAB -->
-<div id="tab-intel" class="tab-content">
-  <div class="topbar">
-    <div>
-      <div class="topbar-title">Intelligence</div>
-      <div class="topbar-sub">resumen ejecutivo · problemas detectados · oportunidades de revenue · alertas IA</div>
-    </div>
-    <div class="topbar-actions">
-      <label>período</label>
-      <select id="intelRange"><option value="7">7 días</option><option value="14">14 días</option><option value="30">30 días</option></select>
-      <button class="btn primary" id="intelBtn" onclick="runIntelligence()">◆ analizar negocio</button>
-    </div>
-  </div>
-  <div class="content" id="intelContent">
-    <div class="empty" style="padding:5rem 2rem">
-      <div style="font-size:2rem;margin-bottom:0.75rem">◆</div>
-      <div style="margin-bottom:0.5rem">presioná "analizar negocio" para obtener el resumen ejecutivo</div>
-      <div style="font-size:0.65rem;color:var(--muted)">conecta VTEX + Clarity + IA para darte insights accionables</div>
-    </div>
-  </div>
-</div>
 
 <!-- MONTHLY REPORT TAB -->
 <div id="tab-report" class="tab-content">
@@ -1667,6 +1694,109 @@ async function runTeardown(id){
 
 // Init competitors list on load
 renderCompetitorsList();
+
+// -- SEO MODE TOGGLE ---------------------------------------------------------
+let seoMode = 'products';
+function setSeoMode(mode){
+  seoMode = mode;
+  document.getElementById('seoModeProducts').classList.toggle('active', mode==='products');
+  document.getElementById('seoModePages').classList.toggle('active', mode==='pages');
+  document.getElementById('seoProductControls').style.display = mode==='products'?'flex':'none';
+  document.getElementById('seoPagesControls').style.display = mode==='pages'?'flex':'none';
+  document.getElementById('seoTable').style.display = mode==='products'?'':'none';
+  document.getElementById('seoFilters').style.display = mode==='products'&&seoData.length?'flex':'none';
+  document.getElementById('seoPagesSection').style.display = mode==='pages'?'block':'none';
+  document.getElementById('seoSubtitle').textContent = mode==='products'
+    ? 'VTEX Catalog API · títulos · meta desc · imágenes · contenido'
+    : 'Crawl automático · páginas estáticas · promociones · FAQ · colecciones';
+}
+
+// -- SEO PAGES ---------------------------------------------------------------
+async function runSEOPages(){
+  const btn = document.getElementById('seoPagesBtn');
+  btn.disabled = true;
+  log('spDot','spLog','crawleando sitemap y páginas del sitio...');
+  document.getElementById('seoPagesGrid').innerHTML =
+    Array(6).fill('<div class="sp-card"><div class="shimmer" style="height:140px;border-radius:4px"></div></div>').join('');
+
+  try {
+    const data = await post('/api/seo-pages', {});
+    if(data.error) throw new Error(data.error);
+    
+    document.getElementById('sp1').textContent = data.total;
+    const s2 = document.getElementById('sp2');
+    s2.textContent = data.avgScore + '%';
+    s2.className = 'stat-val ' + (data.avgScore>=80?'good':data.avgScore>=50?'warn':'bad');
+    document.getElementById('sp3').textContent = data.critical;
+    document.getElementById('sp4').textContent = data.good;
+
+    renderSEOPages(data.pages);
+    log('spDot','spLog',`${data.total} páginas analizadas · score promedio: ${data.avgScore}`,false);
+  } catch(e) {
+    log('spDot','spLog','error: '+e.message, false);
+    document.getElementById('seoPagesGrid').innerHTML = '';
+  }
+  btn.disabled = false;
+}
+
+function renderSEOPages(pages){
+  const TYPE_LABELS = {home:'Home',promo:'Promo',faq:'FAQ',collection:'Colección',store:'Locales',page:'Página'};
+  const grid = document.getElementById('seoPagesGrid');
+
+  grid.innerHTML = pages.map(p => {
+    const sc = p.score;
+    const cls = sc>=80?'sp-good':sc>=50?'sp-mid':'sp-bad';
+    const scColor = sc>=80?'var(--good)':sc>=50?'var(--warn)':'var(--danger)';
+    const typeClass = 'sp-type-'+(p.type||'page');
+    const label = p.label || p.url.replace('https://www.rickysarkany.com/','') || 'Home';
+    const shortUrl = p.url.replace('https://www.rickysarkany.com','') || '/';
+
+    const titleOk = p.title && p.title.length>=30 && p.title.length<=70;
+    const metaOk  = p.metaDesc && p.metaDesc.length>=50 && p.metaDesc.length<=160;
+    const h1Ok    = !!p.h1;
+    const canOk   = !!p.canonical;
+
+    return `<div class="sp-card ${cls}">
+      <div class="sp-card-header">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.3rem">
+            <span class="sp-type-badge ${typeClass}">${TYPE_LABELS[p.type]||p.type}</span>
+          </div>
+          <div class="sp-label" title="${label}">${label}</div>
+          <div class="sp-url" title="${p.url}">${shortUrl}</div>
+        </div>
+        <div class="sp-score-wrap">
+          <div class="sp-score-num" style="color:${scColor}">${sc}</div>
+          <div class="sp-score-bar"><div class="sp-score-fill" style="width:${sc}%;background:${scColor}"></div></div>
+        </div>
+      </div>
+
+      <div class="sp-fields">
+        <div class="sp-field">
+          <div class="sp-field-label">Title</div>
+          <div class="sp-field-val ${titleOk?'good':p.title?'warn':'bad'}">${p.title?p.title.slice(0,28)+(p.title.length>28?'…':''):'sin title'}</div>
+        </div>
+        <div class="sp-field">
+          <div class="sp-field-label">Meta desc</div>
+          <div class="sp-field-val ${metaOk?'good':p.metaDesc?'warn':'bad'}">${p.metaDesc?p.metaDesc.slice(0,28)+(p.metaDesc.length>28?'…':''):'sin meta'}</div>
+        </div>
+        <div class="sp-field">
+          <div class="sp-field-label">H1</div>
+          <div class="sp-field-val ${h1Ok?'good':'bad'}">${p.h1?p.h1.slice(0,28)+(p.h1.length>28?'…':''):'sin H1'}</div>
+        </div>
+        <div class="sp-field">
+          <div class="sp-field-label">Canonical</div>
+          <div class="sp-field-val ${canOk?'good':'warn'}">${canOk?'✓ presente':'⚠ ausente'}</div>
+        </div>
+      </div>
+
+      <div class="sp-issues">
+        ${p.issues.map(i=>`<span class="tag tag-${i.t==='ok'?'ok':i.t==='warn'?'warn':'bad'}">${i.l}</span>`).join('')}
+      </div>
+      ${p.error?`<div style="margin-top:0.5rem;font-size:0.65rem;color:var(--danger);font-family:'IBM Plex Mono',monospace">⚠ ${p.error}</div>`:''}
+    </div>`;
+  }).join('');
+}
 
 // -- MONTHLY REPORT ----------------------------------------------------------
 (function(){
