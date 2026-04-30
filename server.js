@@ -422,323 +422,6 @@ app.use((err, req, res, next) => {
 });
 
 
-// ── INTELLIGENCE: Resumen ejecutivo con IA ────────────────────────────────────
-app.post('/api/intelligence', async (req, res) => {
-  const { dateRange = '7' } = req.body;
-
-  try {
-    // 1. Traer datos de VTEX OMS
-    let funnelData = null, sourcesData = null, clarityData = null;
-
-    if (VTEX_ACCOUNT && VTEX_APP_KEY && VTEX_APP_TOKEN) {
-      const base = `https://${VTEX_ACCOUNT}.vtexcommercestable.com.br`;
-      const days = parseInt(dateRange) || 7;
-      const now = new Date(), from = new Date(now - days * 86400000);
-      const fmt = d => d.toISOString().split('T')[0] + 'T00:00:00.000Z';
-
-      try {
-        const r = await fetch(
-          `${base}/api/oms/pvt/orders?f_creationDate=creationDate:[${fmt(from)} TO ${fmt(now)}]&page=1&per_page=100`,
-          { headers: { 'X-VTEX-API-AppKey': VTEX_APP_KEY, 'X-VTEX-API-AppToken': VTEX_APP_TOKEN, 'Accept': 'application/json' } }
-        );
-        if (r.ok) {
-          const data = await r.json();
-          const orders = data.list || [];
-          const purchases = data.paging?.total || orders.length || 0;
-          const checkout = Math.round(purchases / 0.47);
-          const cart = Math.round(checkout / 0.56);
-          const pdp = Math.round(cart / 0.41);
-          const visits = Math.round(pdp / 0.65);
-
-          // AOV estimado
-          let totalRevenue = 0, aov = 0;
-          for (const order of orders.slice(0, 20)) {
-            try {
-              const det = await fetch(`${base}/api/oms/pvt/orders/${order.orderId}`,
-                { headers: { 'X-VTEX-API-AppKey': VTEX_APP_KEY, 'X-VTEX-API-AppToken': VTEX_APP_TOKEN, 'Accept': 'application/json' } });
-              if (det.ok) {
-                const d = await det.json();
-                totalRevenue += (d.value || 0) / 100;
-              }
-            } catch {}
-          }
-          aov = orders.length > 0 ? Math.round(totalRevenue / Math.min(orders.length, 20)) : 0;
-
-          // Sources
-          const sources = {};
-          for (const order of orders.slice(0, 30)) {
-            try {
-              const det = await fetch(`${base}/api/oms/pvt/orders/${order.orderId}`,
-                { headers: { 'X-VTEX-API-AppKey': VTEX_APP_KEY, 'X-VTEX-API-AppToken': VTEX_APP_TOKEN, 'Accept': 'application/json' } });
-              if (!det.ok) continue;
-              const d = await det.json();
-              const src = d.marketingData?.utmSource || d.origin || 'directo';
-              sources[src] = (sources[src] || 0) + 1;
-            } catch {}
-          }
-
-          funnelData = { purchases, checkout, cart, pdp, visits, aov,
-            conversionRate: visits > 0 ? +((purchases/visits)*100).toFixed(2) : 0,
-            checkoutAbandonment: Math.round((1-purchases/checkout)*100),
-            cartToCheckout: Math.round((purchases/cart)*100),
-            pdpToCart: Math.round((cart/pdp)*100),
-            visitToPdp: Math.round((pdp/visits)*100)
-          };
-          sourcesData = Object.entries(sources).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>({source:k,orders:v}));
-        }
-      } catch(e) { console.error('VTEX error:', e.message); }
-    }
-
-    // 2. Traer datos de Clarity
-    if (CLARITY_PROJECT_ID && CLARITY_API_KEY) {
-      const endDate = new Date(), startDate = new Date(endDate - parseInt(dateRange) * 86400000);
-      const fmtDate = d => d.toISOString().split('T')[0];
-      try {
-        const [mRes, sRes] = await Promise.all([
-          fetch(`https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}&startDate=${fmtDate(startDate)}&endDate=${fmtDate(endDate)}`,
-            { headers: { 'Authorization': `Bearer ${CLARITY_API_KEY}`, 'Accept': 'application/json' } }),
-          fetch(`https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}&startDate=${fmtDate(startDate)}&endDate=${fmtDate(endDate)}&type=session`,
-            { headers: { 'Authorization': `Bearer ${CLARITY_API_KEY}`, 'Accept': 'application/json' } })
-        ]);
-        const metrics = mRes.ok ? await mRes.json() : {};
-        const sessions = sRes.ok ? await sRes.json() : {};
-        const sessionList = sessions.sessions || sessions.data || [];
-        const rageClicks = sessionList.filter(s=>(s.rageClickCount||0)>0).length;
-        const deadClicks = sessionList.filter(s=>(s.deadClickCount||0)>0).length;
-        clarityData = {
-          totalSessions: metrics.totalSessionCount || sessionList.length || 0,
-          avgScrollDepth: metrics.averageScrollDepth || 0,
-          bounceRate: metrics.bounceRate || 0,
-          avgDuration: sessionList.reduce((s,x)=>s+(x.duration||0),0)/(sessionList.length||1),
-          rageClickRate: sessionList.length ? Math.round(rageClicks/sessionList.length*100) : 0,
-          deadClickRate: sessionList.length ? Math.round(deadClicks/sessionList.length*100) : 0,
-          jsErrors: metrics.jsErrorCount || 0
-        };
-      } catch(e) { console.error('Clarity error:', e.message); }
-    }
-
-    // 3. Claude genera el análisis inteligente completo
-    const dataContext = `
-PERÍODO: últimos ${dateRange} días
-
-FUNNEL VTEX OMS:
-${funnelData ? `
-- Visitas estimadas: ${funnelData.visits}
-- PDP views: ${funnelData.pdp} (${funnelData.visitToPdp}% de visitas)
-- Agregados al carrito: ${funnelData.cart} (${funnelData.pdpToCart}% de PDP)
-- Iniciaron checkout: ${funnelData.checkout} (${funnelData.cartToCheckout}% de carrito)
-- Compras completadas: ${funnelData.purchases}
-- Conversión total: ${funnelData.conversionRate}%
-- Abandono checkout: ${funnelData.checkoutAbandonment}%
-- AOV estimado: $${funnelData.aov} ARS
-- Revenue estimado período: $${Math.round(funnelData.purchases * funnelData.aov).toLocaleString()} ARS
-` : 'No disponible'}
-
-COMPORTAMIENTO CLARITY:
-${clarityData ? `
-- Sesiones: ${clarityData.totalSessions}
-- Scroll promedio: ${clarityData.avgScrollDepth}%
-- Bounce rate: ${clarityData.bounceRate}%
-- Duración promedio: ${Math.round(clarityData.avgDuration)}s
-- Rage click rate: ${clarityData.rageClickRate}%
-- Dead click rate: ${clarityData.deadClickRate}%
-- Errores JS: ${clarityData.jsErrors}
-` : 'No disponible'}
-
-FUENTES DE TRAFICO:
-${sourcesData ? sourcesData.map(function(s){return '- '+s.source+': '+s.orders+' ordenes';}).join(', ') : 'No disponible'}
-`;
-
-    const prompt = `Eres el analista de CRO y revenue más experimentado de e-commerce en Argentina. Analizas el negocio de Ricky Sarkany, marca premium de calzado.
-
-${dataContext}
-
-Genera un análisis ejecutivo COMPLETO en JSON con esta estructura exacta (responde SOLO JSON, sin markdown):
-
-{
-  "healthScore": <número 0-100 basado en conversión, behavior y fuentes>,
-  "healthLabel": <"Crítico"|"En riesgo"|"Estable"|"Saludable"|"Excelente">,
-  "mainProblem": {
-    "title": <string corto impactante>,
-    "description": <2-3 oraciones explicando qué pasa, por qué y qué significa para el negocio>,
-    "impact": <estimación de revenue perdido o en riesgo>,
-    "urgency": <"critical"|"high"|"medium">
-  },
-  "insights": [
-    {
-      "priority": <"critical"|"opportunity"|"incremental">,
-      "area": <"Funnel"|"Comportamiento"|"Tráfico"|"Revenue">,
-      "title": <string accionable>,
-      "description": <insight interpretado, no solo el dato. Explica QUÉ significa, POR QUÉ pasa y QUÉ hacer>,
-      "metric": <dato clave>,
-      "revenueImpact": <estimación de impacto si se mejora>,
-      "action": <acción concreta y específica a tomar>
-    }
-  ],
-  "opportunities": [
-    {
-      "title": <oportunidad concreta>,
-      "scenario": <"Si mejoramos X en Y%, el impacto estimado es...">,
-      "estimatedOrders": <número>,
-      "estimatedRevenue": <string con $>,
-      "effort": <"bajo"|"medio"|"alto">
-    }
-  ],
-  "behaviorAlerts": [
-    {
-      "signal": <señal de comportamiento observada>,
-      "interpretation": <qué significa en términos de UX y negocio>,
-      "fix": <qué hay que revisar o cambiar>
-    }
-  ],
-  "trafficInsight": <análisis de 2-3 oraciones sobre las fuentes de tráfico: qué canal lidera, cuál preocupa, recomendación>,
-  "weekSummary": <resumen ejecutivo de 2-3 oraciones que podría leer un CEO: situación actual, principal problema, oportunidad más grande>
-}
-
-IMPORTANTE:
-- Sé MUY específico con números reales del contexto
-- Estimaciones de revenue basadas en AOV real y volumen real
-- Lenguaje de negocio, no técnico
-- Insights accionables, no observaciones
-- Tono directo, orientado a decisión
-- Si un dato no está disponible, estimalo con criterio de negocio`;
-
-    const raw = await callClaude([{role:'user', content:prompt}],
-      'Eres un experto en CRO y revenue para e-commerce premium argentino. Siempre respondes con JSON válido, sin markdown, sin explicaciones fuera del JSON.',
-      2000);
-
-    // Parse JSON safely - handle markdown fences and nested objects
-    let analysis;
-    try {
-      // Remove markdown code fences if present
-      let cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-      // Find the outermost JSON object
-      const start = cleaned.indexOf('{');
-      const end = cleaned.lastIndexOf('}');
-      if (start !== -1 && end !== -1 && end > start) {
-        const jsonStr = cleaned.slice(start, end + 1);
-        analysis = JSON.parse(jsonStr);
-      } else {
-        analysis = null;
-      }
-      console.log('Intelligence analysis parsed OK, keys:', analysis ? Object.keys(analysis).join(',') : 'null');
-    } catch(e) {
-      console.error('Intelligence JSON parse error:', e.message);
-      console.error('Raw response preview:', raw.slice(0, 500));
-      analysis = null;
-    }
-
-    res.json({
-      analysis,
-      rawAnalysis: analysis ? null : raw.slice(0, 3000),
-      rawData: { funnelData, clarityData, sourcesData },
-      period: dateRange
-    });
-
-  } catch(e) { res.status(500).json({ error: e.message }); }
-});
-
-
-// -- MULTI-PAGE HEATMAP ANALYSIS ----------------------------------------------
-app.post('/api/heatmap-multi', async (req, res) => {
-  const { dateRange = '7', pages } = req.body;
-  if (!CLARITY_PROJECT_ID || !CLARITY_API_KEY)
-    return res.status(400).json({ error: 'Credenciales Clarity no configuradas' });
-
-  const endDate = new Date();
-  const startDate = new Date(endDate - parseInt(dateRange) * 86400000);
-  const fmtDate = d => d.toISOString().split('T')[0];
-  const clarityHdr = { 'Authorization': `Bearer ${CLARITY_API_KEY}`, 'Accept': 'application/json' };
-
-  // 1. Build pages list auto from VTEX
-  let pageList = pages || [];
-  if (!pageList.length && VTEX_ACCOUNT && VTEX_APP_KEY && VTEX_APP_TOKEN) {
-    try {
-      pageList.push({ url: 'https://www.sarkanyar.com/', label: 'Home', type: 'home' });
-      pageList.push({ url: 'https://www.sarkanyar.com/zapatillas/', label: 'Zapatillas', type: 'category' });
-      pageList.push({ url: 'https://www.sarkanyar.com/zapatos/', label: 'Zapatos', type: 'category' });
-      pageList.push({ url: 'https://www.sarkanyar.com/accesorios/', label: 'Accesorios', type: 'category' });
-      const base = `https://${VTEX_ACCOUNT}.vtexcommercestable.com.br`;
-      const r = await fetch(
-        `${base}/api/catalog_system/pub/products/search?_from=0&_to=4&O=OrderByTopSaleDESC`,
-        { headers: { 'X-VTEX-API-AppKey': VTEX_APP_KEY, 'X-VTEX-API-AppToken': VTEX_APP_TOKEN, 'Accept': 'application/json' } }
-      );
-      if (r.ok) {
-        const products = await r.json();
-        for (const p of products.slice(0, 4)) {
-          const link = p.link || '';
-          const url = link.startsWith('http') ? link : `https://www.sarkanyar.com${link}`;
-          pageList.push({ url, label: (p.productName || 'Producto').slice(0, 28), type: 'product' });
-        }
-      }
-    } catch(e) { console.error('VTEX pages error:', e.message); }
-  }
-
-  if (!pageList.length) return res.status(400).json({ error: 'No hay paginas para analizar' });
-
-  // 2. Fetch Clarity data for each page
-  const pageResults = await Promise.all(pageList.map(async (page) => {
-    try {
-      const encodedUrl = encodeURIComponent(page.url);
-      const [metricsRes, hmRes, sessRes] = await Promise.all([
-        fetch(`https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}&startDate=${fmtDate(startDate)}&endDate=${fmtDate(endDate)}`, { headers: clarityHdr }),
-        fetch(`https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}&startDate=${fmtDate(startDate)}&endDate=${fmtDate(endDate)}&type=click&url=${encodedUrl}`, { headers: clarityHdr }),
-        fetch(`https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}&startDate=${fmtDate(startDate)}&endDate=${fmtDate(endDate)}&type=session&url=${encodedUrl}`, { headers: clarityHdr })
-      ]);
-      const metrics  = metricsRes.ok ? await metricsRes.json() : {};
-      const hmData   = hmRes.ok     ? await hmRes.json()     : {};
-      const sessData = sessRes.ok   ? await sessRes.json()   : {};
-      const sessions = sessData.sessions || sessData.data || [];
-      const rageClicks = sessions.filter(s => (s.rageClickCount || 0) > 0).length;
-      const deadClicks = sessions.filter(s => (s.deadClickCount || 0) > 0).length;
-      const totalSess  = metrics.totalSessionCount || sessions.length || 0;
-      const avgScroll  = metrics.averageScrollDepth || 0;
-      const avgDur     = sessions.reduce((s,x)=>s+(x.duration||0),0) / (sessions.length||1);
-      const bounceRate = metrics.bounceRate || 0;
-      const clickAreas = (hmData.clickData || hmData.data || hmData.elements || []).slice(0,5).map((c,i) => ({
-        zone: c.element || c.label || c.name || `Zona ${i+1}`,
-        clicks: c.clickCount || c.count || 0,
-        pct: +(c.percentage || 0).toFixed(1),
-        x: c.x || [50,25,75,50,25][i] || 50,
-        y: c.y || [10,30,30,55,70][i] || 50
-      }));
-      const scrollScore = Math.min(avgScroll / 60 * 30, 30);
-      const bounceScore = Math.max(30 - bounceRate * 0.5, 0);
-      const rageScore   = Math.max(20 - (rageClicks/(totalSess||1))*100, 0);
-      const durScore    = Math.min(avgDur / 120 * 20, 20);
-      const uxScore     = Math.round(scrollScore + bounceScore + rageScore + durScore);
-      return {
-        ...page, totalSessions: totalSess, avgScrollDepth: avgScroll,
-        avgDuration: Math.round(avgDur), bounceRate,
-        rageClickRate: totalSess ? Math.round(rageClicks/totalSess*100) : 0,
-        deadClickRate: totalSess ? Math.round(deadClicks/totalSess*100) : 0,
-        clickAreas, uxScore,
-        scrollData: [
-          { depth:0, pct:100 }, { depth:25, pct: metrics.scroll25 || 78 },
-          { depth:50, pct: metrics.scroll50 || 55 }, { depth:75, pct: metrics.scroll75 || 34 },
-          { depth:100, pct: metrics.scroll100 || 18 }
-        ]
-      };
-    } catch(e) { return { ...page, error: e.message, uxScore: 0, totalSessions: 0 }; }
-  }));
-
-  // 3. IA comparison
-  const pagesCtx = pageResults.map(p =>
-    `${p.label} (${p.type}) - UX: ${p.uxScore}/100 | Sessions: ${p.totalSessions} | Scroll: ${p.avgScrollDepth}% | Bounce: ${p.bounceRate}% | RageClicks: ${p.rageClickRate}% | Dur: ${p.avgDuration}s`
-  ).join('\n');
-
-  let comparison = null;
-  try {
-    const raw = await callClaude([{ role: 'user', content: `CRO expert. Analyze behavior data from Ricky Sarkany e-commerce pages. Respond ONLY with valid JSON no markdown:\n{\n  "winner": "label",\n  "loser": "label",\n  "winnerReason": "1-2 sentences why this page works better",\n  "loserReason": "main problem of worst page",\n  "insights": [{"page":"label","type":"home|category|product","finding":"specific insight","action":"concrete action","priority":"critical|high|medium"}],\n  "recommendation": "2-3 sentence executive recommendation"\n}\n\nDATA (${dateRange} days):\n${pagesCtx}` }],
-      'CRO expert for premium e-commerce. Respond ONLY with valid JSON.', 1000);
-    const m = raw.match(/\{[\s\S]*\}/);
-    comparison = m ? JSON.parse(m[0]) : null;
-  } catch(e) { comparison = null; }
-
-  pageResults.sort((a, b) => b.uxScore - a.uxScore);
-  res.json({ pages: pageResults, comparison, period: dateRange });
-});
-
 
 // -- MONTHLY REPORT ----------------------------------------------------------
 app.post('/api/monthly-report', async (req, res) => {
@@ -821,12 +504,12 @@ app.post('/api/monthly-report', async (req, res) => {
     // Use same field mapping as working heatmap endpoint
     // Helper: Clarity returns bounceRate as decimal (0.25) - convert to %
     const toBounce = v => v > 1 ? Math.round(v) : Math.round((v||0)*100);
-    // Sessions come from metrics object OR from session array length
-    const mSessCount = mMet.totalSessionCount||mMet.sessionCount||mMet.totalCount||mSArr.length||0;
-    const cSessCount = cMet.totalSessionCount||cMet.sessionCount||cMet.totalCount||cSArr.length||0;
+    // Sessions: use the totals extracted above
+    const mSessCount = mSessTotal||mSArr.length||0;
+    const cSessCount = cSessTotal||cSArr.length||0;
 
     const mClar={
-      sessions:   mSessCount,
+      sessions:   mSessTotal||mSessCount,
       scrollDepth:Math.round(mMet.averageScrollDepth||mMet.scrollDepth||62),
       bounceRate: toBounce(mMet.bounceRate||mMet.bounceRatePercentage),
       avgDuration:Math.round(mMet.averageSessionDuration||mMet.avgDuration||mSArr.reduce((s,x)=>s+(x.duration||0),0)/(mSArr.length||1)||138),
@@ -837,7 +520,7 @@ app.post('/api/monthly-report', async (req, res) => {
       scroll100:  Math.round(mMet.scroll100||mMet.scrollDepthPercentage100||18)
     };
     const cClar={
-      sessions:   cSessCount,
+      sessions:   cSessTotal||cSessCount,
       scrollDepth:Math.round(cMet.averageScrollDepth||cMet.scrollDepth||62),
       bounceRate: toBounce(cMet.bounceRate||cMet.bounceRatePercentage),
       avgDuration:Math.round(cMet.averageSessionDuration||cMet.avgDuration||cSArr.reduce((s,x)=>s+(x.duration||0),0)/(cSArr.length||1)||138),
@@ -880,6 +563,128 @@ FUENTES: ${Object.entries(mSrc).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>k
   }
 });
 
+
+
+// -- SEO PAGES: Crawl static pages from sitemap ---------------------------
+app.post('/api/seo-pages', async (req, res) => {
+  const { urls } = req.body;
+
+  // Default: auto-detect from sitemap
+  let pageUrls = urls || [];
+  if (!pageUrls.length) {
+    try {
+      const sitemapRes = await fetch('https://www.rickysarkany.com/sitemap/custom-user-routes-1.xml');
+      if (sitemapRes.ok) {
+        const xml = await sitemapRes.text();
+        const matches = xml.match(/<loc>([^<]+)<\/loc>/g) || [];
+        pageUrls = matches.map(m => m.replace(/<\/?loc>/g, '').trim()).slice(0, 25);
+      }
+    } catch(e) { console.error('Sitemap fetch error:', e.message); }
+  }
+
+  // Always include key static pages
+  const staticPages = [
+    { url: 'https://www.rickysarkany.com/', label: 'Home' },
+    { url: 'https://www.rickysarkany.com/preguntas-frecuentes', label: 'Preguntas Frecuentes' },
+    { url: 'https://www.rickysarkany.com/stores', label: 'Locales' },
+  ];
+
+  // Build full list: static + sitemap pages
+  const allUrls = [
+    ...staticPages.map(p => p.url),
+    ...pageUrls.filter(u => !staticPages.some(s => s.url === u))
+  ].slice(0, 30);
+
+  // Crawl each page in parallel
+  const crawlPage = async (url) => {
+    try {
+      const r = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RickyAnalytics/1.0)' },
+        signal: AbortSignal.timeout(8000)
+      });
+      if (!r.ok) return { url, error: `HTTP ${r.status}` };
+      const html = await r.text();
+
+      // Extract SEO fields
+      const getTag = (pattern) => { const m = html.match(pattern); return m ? m[1]?.trim() : ''; };
+      const title       = getTag(/<title[^>]*>([^<]+)<\/title>/i);
+      const metaDesc    = getTag(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)
+                       || getTag(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
+      const h1          = getTag(/<h1[^>]*>([^<]+)<\/h1>/i);
+      const canonical   = getTag(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i);
+      const ogTitle     = getTag(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
+      const ogDesc      = getTag(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
+      const robots      = getTag(/<meta[^>]+name=["']robots["'][^>]+content=["']([^"']+)["']/i);
+      const imgCount    = (html.match(/<img /gi) || []).length;
+      const imgNoAlt    = (html.match(/<img(?![^>]*alt=)[^>]*>/gi) || []).length;
+      const h2Count     = (html.match(/<h2/gi) || []).length;
+      const wordCount   = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().split(' ').length;
+
+      // Score
+      let score = 100;
+      const issues = [];
+      if (!title)                          { score -= 25; issues.push({ t:'bad', l:'sin title tag' }); }
+      else if (title.length < 30)          { score -= 10; issues.push({ t:'warn', l:`title corto (${title.length}c)` }); }
+      else if (title.length > 70)          { score -= 8;  issues.push({ t:'warn', l:`title largo (${title.length}c)` }); }
+      else                                               issues.push({ t:'ok', l:`title ok (${title.length}c)` });
+      if (!metaDesc)                       { score -= 20; issues.push({ t:'bad', l:'sin meta description' }); }
+      else if (metaDesc.length < 50)       { score -= 10; issues.push({ t:'warn', l:`meta corta (${metaDesc.length}c)` }); }
+      else if (metaDesc.length > 160)      { score -= 8;  issues.push({ t:'warn', l:`meta larga (${metaDesc.length}c)` }); }
+      else                                               issues.push({ t:'ok', l:`meta ok (${metaDesc.length}c)` });
+      if (!h1)                             { score -= 15; issues.push({ t:'bad', l:'sin H1' }); }
+      else                                               issues.push({ t:'ok', l:'H1 presente' });
+      if (!canonical)                      { score -= 10; issues.push({ t:'warn', l:'sin canonical' }); }
+      if (imgNoAlt > 0)                    { score -= 5;  issues.push({ t:'warn', l:`${imgNoAlt} imgs sin alt` }); }
+      if (!ogTitle || !ogDesc)             { score -= 5;  issues.push({ t:'warn', l:'Open Graph incompleto' }); }
+      if (robots && /noindex/i.test(robots)){ score -= 30; issues.push({ t:'bad', l:'página con noindex!' }); }
+
+      // Label from static pages or derive from URL
+      const staticPage = staticPages.find(p => p.url === url);
+      const label = staticPage?.label || url.replace('https://www.rickysarkany.com/', '').replace(/-/g,' ') || url;
+
+      return {
+        url, label,
+        score: Math.max(0, Math.min(100, score)),
+        title, metaDesc, h1, canonical, ogTitle, ogDesc,
+        robots: robots || 'index,follow',
+        imgCount, imgNoAlt, h2Count, wordCount,
+        issues,
+        type: detectPageType(url)
+      };
+    } catch(e) {
+      return { url, label: url.split('/').pop() || url, error: e.message, score: 0, issues: [{t:'bad',l:'error al crawlear'}] };
+    }
+  };
+
+  const detectPageType = (url) => {
+    const path = url.replace('https://www.rickysarkany.com','').toLowerCase();
+    if (path === '/' || path === '') return 'home';
+    if (/pregunta|faq/i.test(path)) return 'faq';
+    if (/promo|sale|off|descuento|cyber/i.test(path)) return 'promo';
+    if (/store|local|tienda/i.test(path)) return 'store';
+    if (/coleccion|collection|ss|aw|temporada/i.test(path)) return 'collection';
+    return 'page';
+  };
+
+  // Crawl all pages in parallel (batches of 8)
+  const results = [];
+  for (let i = 0; i < allUrls.length; i += 8) {
+    const batch = allUrls.slice(i, i+8);
+    const batchResults = await Promise.all(batch.map(crawlPage));
+    results.push(...batchResults);
+  }
+
+  results.sort((a,b) => a.score - b.score);
+  const avg = results.length ? Math.round(results.reduce((s,p)=>s+p.score,0)/results.length) : 0;
+
+  res.json({
+    pages: results,
+    total: results.length,
+    avgScore: avg,
+    critical: results.filter(p=>p.score<50).length,
+    good: results.filter(p=>p.score>=80).length
+  });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
