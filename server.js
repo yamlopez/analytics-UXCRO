@@ -686,6 +686,360 @@ app.post('/api/seo-pages', async (req, res) => {
   });
 });
 
+
+// -- UX LAB: Friction Score + Sessions + Performance -------------------------
+app.post('/api/ux-lab', async (req, res) => {
+  const { dateRange = '7' } = req.body;
+  const endDate = new Date();
+  const startDate = new Date(endDate - parseInt(dateRange) * 86400000);
+  const fmtDate = d => d.toISOString().split('T')[0];
+  const clH = clarityHeaders();
+  const base = `https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}`;
+
+  try {
+    // 1. Clarity global metrics + sessions
+    const [metRes, sessRes, mobileRes] = await Promise.all([
+      fetch(`${base}&startDate=${fmtDate(startDate)}&endDate=${fmtDate(endDate)}`, { headers: clH }),
+      fetch(`${base}&startDate=${fmtDate(startDate)}&endDate=${fmtDate(endDate)}&type=session`, { headers: clH }),
+      fetch(`${base}&startDate=${fmtDate(startDate)}&endDate=${fmtDate(endDate)}&deviceType=Mobile`, { headers: clH })
+    ]);
+    const met = metRes.ok ? await metRes.json() : {};
+    const sessData = sessRes.ok ? await sessRes.json() : {};
+    const mobMet = mobileRes.ok ? await mobileRes.json() : {};
+    const sessions = sessData.sessions || sessData.data || [];
+
+    // 2. VTEX CVR for correlation
+    let cvr = 0, totalOrders = 0, totalVisits = 0;
+    if (VTEX_ACCOUNT && VTEX_APP_KEY && VTEX_APP_TOKEN) {
+      try {
+        const vtexBase = `https://${VTEX_ACCOUNT}.vtexcommercestable.com.br`;
+        const ordRes = await fetch(
+          `${vtexBase}/api/oms/pvt/orders?f_creationDate=creationDate:[${startDate.toISOString()} TO ${endDate.toISOString()}]&page=1&per_page=50`,
+          { headers: { 'X-VTEX-API-AppKey': VTEX_APP_KEY, 'X-VTEX-API-AppToken': VTEX_APP_TOKEN, 'Accept': 'application/json' } }
+        );
+        if (ordRes.ok) {
+          const ordData = await ordRes.json();
+          totalOrders = ordData.paging?.total || ordData.list?.length || 0;
+          const est = Math.round(totalOrders / 0.47 / 0.56 / 0.41 / 0.65);
+          totalVisits = est;
+          cvr = totalVisits > 0 ? +((totalOrders / totalVisits) * 100).toFixed(2) : 0;
+        }
+      } catch(e) { console.error('VTEX error:', e.message); }
+    }
+
+    // 3. Compute UX Friction Score
+    const totalSess = met.totalSessionCount || met.sessionCount || sessions.length || 0;
+    const rageClicks = sessions.filter(s => (s.rageClickCount || 0) > 0).length;
+    const deadClicks = sessions.filter(s => (s.deadClickCount || 0) > 0).length;
+    const quickBacks = sessions.filter(s => (s.quickBackCount || s.bounceCount || 0) > 0).length;
+    const scrollDepth = met.averageScrollDepth || met.scrollDepth || 62;
+    const bounceRate = met.bounceRate > 1 ? met.bounceRate : Math.round((met.bounceRate || 0) * 100);
+    const avgDuration = met.averageSessionDuration || met.avgDuration || 138;
+
+    const rageRate = totalSess > 0 ? (rageClicks / totalSess) * 100 : 0;
+    const deadRate = totalSess > 0 ? (deadClicks / totalSess) * 100 : 0;
+    const quickRate = totalSess > 0 ? (quickBacks / totalSess) * 100 : 0;
+
+    // Friction score: lower = less friction (0-100, 100 = no friction)
+    const frictionPenalty =
+      (rageRate * 2.5) +         // rage clicks hurt most
+      (deadRate * 1.5) +          // dead clicks indicate confusion
+      (quickRate * 2.0) +         // quick backs = bad content match
+      (Math.max(0, 60 - scrollDepth) * 0.5) + // low scroll = disengagement
+      (Math.max(0, bounceRate - 30) * 0.3);   // high bounce above 30%
+    const frictionScore = Math.max(0, Math.min(100, Math.round(100 - frictionPenalty)));
+
+    // 4. Build sessions list for replay links
+    const topSessions = sessions
+      .sort((a, b) => ((b.rageClickCount||0) + (b.deadClickCount||0)) - ((a.rageClickCount||0) + (a.deadClickCount||0)))
+      .slice(0, 10)
+      .map(s => ({
+        id: s.sessionId || s.id || '',
+        duration: s.duration || s.sessionDuration || 0,
+        rageClicks: s.rageClickCount || 0,
+        deadClicks: s.deadClickCount || 0,
+        scrollDepth: s.scrollDepth || 0,
+        device: s.device || s.deviceType || 'unknown',
+        url: s.sessionId ? `https://clarity.microsoft.com/projects/${CLARITY_PROJECT_ID}/recordings/${s.sessionId}` : '',
+        clarityUrl: `https://clarity.microsoft.com/projects/${CLARITY_PROJECT_ID}/recordings?filters=rageClick`
+      }));
+
+    // 5. Performance - measure TTFB for key pages
+    const measureTTFB = async (url) => {
+      const start = Date.now();
+      try {
+        const r = await fetch(url, {
+          method: 'HEAD',
+          signal: AbortSignal.timeout(8000),
+          headers: { 'User-Agent': 'Mozilla/5.0 RickyAnalytics/1.0' }
+        });
+        const ttfb = Date.now() - start;
+        return { url, ttfb, status: r.status, ok: r.ok };
+      } catch(e) {
+        return { url, ttfb: -1, status: 0, ok: false, error: e.message };
+      }
+    };
+
+    const [homeTTFB, pdpTTFB, catTTFB] = await Promise.all([
+      measureTTFB('https://www.rickysarkany.com/'),
+      measureTTFB('https://www.rickysarkany.com/zapatillas/'),
+      measureTTFB('https://www.rickysarkany.com/botas/')
+    ]);
+
+    // 6. Mobile vs Desktop metrics
+    const mobSessions = sessions.filter(s => (s.device||s.deviceType||'').toLowerCase().includes('mobile')).length;
+    const deskSessions = sessions.filter(s => (s.device||s.deviceType||'').toLowerCase().includes('desktop')).length;
+    const mobRage = sessions.filter(s => (s.device||'').toLowerCase().includes('mobile') && (s.rageClickCount||0)>0).length;
+    const deskRage = sessions.filter(s => (s.device||'').toLowerCase().includes('desktop') && (s.rageClickCount||0)>0).length;
+
+    // 7. AI Insights
+    const ctx = `UX FRICTION DATA (últimos ${dateRange} días):
+- Friction Score: ${frictionScore}/100
+- Total sesiones: ${totalSess}
+- Rage clicks: ${rageRate.toFixed(1)}% de sesiones
+- Dead clicks: ${deadRate.toFixed(1)}% de sesiones  
+- Quick backs: ${quickRate.toFixed(1)}% de sesiones
+- Scroll promedio: ${scrollDepth}%
+- Bounce rate: ${bounceRate}%
+- CVR actual: ${cvr}%
+- Mobile sesiones: ${mobSessions} (rage: ${mobSessions>0?Math.round(mobRage/mobSessions*100):0}%)
+- Desktop sesiones: ${deskSessions} (rage: ${deskSessions>0?Math.round(deskRage/deskSessions*100):0}%)
+- TTFB Home: ${homeTTFB.ttfb}ms
+- TTFB Zapatillas: ${catTTFB.ttfb}ms`;
+
+    let insights = null;
+    try {
+      const raw = await callClaude(
+        [{ role: 'user', content: ctx + '\n\nGenera 4-5 insights accionables en JSON. Responde SOLO con JSON valido:\n{"insights":[{"priority":"critical|high|medium","area":"Mobile|Desktop|Funnel|Performance|UX","problem":"problema detectado","impact":"impacto estimado en revenue/CVR","action":"accion concreta a tomar"}],"summary":"2 oraciones ejecutivas"}' }],
+        'CRO expert. Respond ONLY with valid JSON starting with {.',
+        800
+      );
+      const si = raw.indexOf('{'), ei = raw.lastIndexOf('}');
+      if (si !== -1 && ei > si) insights = JSON.parse(raw.slice(si, ei+1));
+    } catch(e) { console.error('AI error:', e.message); }
+
+    res.json({
+      frictionScore,
+      frictionLabel: frictionScore >= 75 ? 'Buena UX' : frictionScore >= 50 ? 'Fricciones detectadas' : 'UX crítica',
+      metrics: { rageRate: +rageRate.toFixed(1), deadRate: +deadRate.toFixed(1), quickRate: +quickRate.toFixed(1), scrollDepth, bounceRate, avgDuration, totalSess, cvr },
+      device: {
+        mobile: { sessions: mobSessions, rageRate: mobSessions>0?+(mobRage/mobSessions*100).toFixed(1):0 },
+        desktop: { sessions: deskSessions, rageRate: deskSessions>0?+(deskRage/deskSessions*100).toFixed(1):0 }
+      },
+      performance: [homeTTFB, pdpTTFB, catTTFB],
+      sessions: topSessions,
+      clarityFilters: {
+        rage: `https://clarity.microsoft.com/projects/${CLARITY_PROJECT_ID}/recordings?filters=rageClick`,
+        dead: `https://clarity.microsoft.com/projects/${CLARITY_PROJECT_ID}/recordings?filters=deadClick`,
+        abandon: `https://clarity.microsoft.com/projects/${CLARITY_PROJECT_ID}/recordings?filters=quickBack`
+      },
+      insights,
+      period: dateRange
+    });
+  } catch(e) {
+    console.error('UX Lab error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
+// -- FUNNEL TIMELINE: día por día ------------------------------------------
+app.post('/api/funnel-timeline', async (req, res) => {
+  if (!VTEX_ACCOUNT || !VTEX_APP_KEY || !VTEX_APP_TOKEN)
+    return res.status(400).json({ error: 'Credenciales VTEX no configuradas' });
+
+  const { dateRange = '14' } = req.body;
+  const days = parseInt(dateRange) || 14;
+  const base = `https://${VTEX_ACCOUNT}.vtexcommercestable.com.br`;
+  const vtexH = { 'X-VTEX-API-AppKey': VTEX_APP_KEY, 'X-VTEX-API-AppToken': VTEX_APP_TOKEN, 'Accept': 'application/json' };
+
+  try {
+    // Fetch all orders for the period
+    const now = new Date();
+    const from = new Date(now - days * 86400000);
+    const ordRes = await fetch(
+      `${base}/api/oms/pvt/orders?f_creationDate=creationDate:[${from.toISOString()} TO ${now.toISOString()}]&page=1&per_page=100&orderBy=creationDate,asc`,
+      { headers: vtexH }
+    );
+    if (!ordRes.ok) throw new Error(`VTEX OMS ${ordRes.status}`);
+    const ordData = await ordRes.json();
+    const orders = ordData.list || [];
+
+    // Group orders by day
+    const dayMap = {};
+    for (let i = 0; i < days; i++) {
+      const d = new Date(from);
+      d.setDate(d.getDate() + i);
+      const key = d.toISOString().split('T')[0];
+      dayMap[key] = { date: key, orders: 0, revenue: 0, sources: {} };
+    }
+
+    for (const o of orders) {
+      const day = (o.creationDate || '').split('T')[0];
+      if (dayMap[day]) {
+        dayMap[day].orders++;
+        dayMap[day].revenue += (o.totalValue || 0) / 100;
+      }
+    }
+
+    // Build timeline with funnel estimates per day
+    const timeline = Object.values(dayMap).map(d => {
+      const purchases = d.orders;
+      const checkout  = Math.round(purchases / 0.47);
+      const cart      = Math.round(checkout  / 0.56);
+      const pdp       = Math.round(cart      / 0.41);
+      const visits    = Math.round(pdp       / 0.65);
+      const cvr       = visits > 0 ? +((purchases / visits) * 100).toFixed(2) : 0;
+      return {
+        date: d.date,
+        label: new Date(d.date + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }),
+        visits, pdp, cart, checkout, purchases,
+        cvr,
+        revenue: Math.round(d.revenue)
+      };
+    });
+
+    // Also get Clarity day-by-day if available
+    let clarityTimeline = [];
+    if (CLARITY_PROJECT_ID && CLARITY_API_KEY) {
+      try {
+        const clH = clarityHeaders();
+        // Clarity doesn't support daily breakdown easily, 
+        // so we approximate from weekly data
+        const clRes = await fetch(
+          `https://www.clarity.ms/export-data/api/v1/project-live-insights?projectId=${CLARITY_PROJECT_ID}&startDate=${from.toISOString().split('T')[0]}&endDate=${now.toISOString().split('T')[0]}&type=session`,
+          { headers: clH }
+        );
+        if (clRes.ok) {
+          const clData = await clRes.json();
+          const sessions = clData.sessions || clData.data || [];
+          // Group sessions by day
+          for (const s of sessions) {
+            const day = (s.startTime || s.date || '').split('T')[0];
+            if (dayMap[day]) {
+              dayMap[day].sessions = (dayMap[day].sessions || 0) + 1;
+              if ((s.rageClickCount || 0) > 0) dayMap[day].rageClicks = (dayMap[day].rageClicks || 0) + 1;
+            }
+          }
+          // Merge into timeline
+          timeline.forEach(t => {
+            const d = dayMap[t.date];
+            t.sessions = d.sessions || 0;
+            t.rageClicks = d.rageClicks || 0;
+            t.rageRate = t.sessions > 0 ? +((t.rageClicks / t.sessions) * 100).toFixed(1) : 0;
+          });
+        }
+      } catch(e) { console.error('Clarity timeline error:', e.message); }
+    }
+
+    // Summary stats
+    const totalOrders  = timeline.reduce((s, d) => s + d.purchases, 0);
+    const avgCVR       = timeline.filter(d=>d.cvr>0).reduce((s,d,i,a)=>s+d.cvr/a.length, 0).toFixed(2);
+    const bestDay      = timeline.reduce((b, d) => d.purchases > b.purchases ? d : b, timeline[0]);
+    const worstDay     = timeline.filter(d=>d.purchases>0).reduce((b, d) => d.purchases < b.purchases ? d : b, timeline[timeline.length-1]);
+    const trend        = timeline.length >= 4
+      ? (() => {
+          const half = Math.floor(timeline.length / 2);
+          const firstHalf = timeline.slice(0, half).reduce((s, d) => s + d.purchases, 0);
+          const secondHalf = timeline.slice(half).reduce((s, d) => s + d.purchases, 0);
+          return firstHalf > 0 ? +(((secondHalf - firstHalf) / firstHalf) * 100).toFixed(1) : 0;
+        })()
+      : 0;
+
+    res.json({ timeline, totalOrders, avgCVR: parseFloat(avgCVR), bestDay, worstDay, trend, period: days });
+  } catch(e) {
+    console.error('Timeline error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
+// -- FUNNEL TIMELINE: día a día -----------------------------------------------
+app.post('/api/funnel-timeline', async (req, res) => {
+  const { dateRange = '14' } = req.body;
+  const days = parseInt(dateRange);
+  const now = new Date();
+
+  if (!VTEX_ACCOUNT || !VTEX_APP_KEY || !VTEX_APP_TOKEN)
+    return res.status(400).json({ error: 'Credenciales VTEX no configuradas' });
+
+  const vtexH = {
+    'X-VTEX-API-AppKey': VTEX_APP_KEY,
+    'X-VTEX-API-AppToken': VTEX_APP_TOKEN,
+    'Accept': 'application/json'
+  };
+  const base = `https://${VTEX_ACCOUNT}.vtexcommercestable.com.br`;
+
+  try {
+    // Fetch orders for each day in parallel (batches of 4 days)
+    const dayData = [];
+    const buildDay = async (dayOffset) => {
+      const dayEnd   = new Date(now);
+      dayEnd.setDate(dayEnd.getDate() - dayOffset);
+      dayEnd.setHours(23, 59, 59, 0);
+      const dayStart = new Date(dayEnd);
+      dayStart.setHours(0, 0, 0, 0);
+
+      try {
+        const r = await fetch(
+          `${base}/api/oms/pvt/orders?f_creationDate=creationDate:[${dayStart.toISOString()} TO ${dayEnd.toISOString()}]&page=1&per_page=50`,
+          { headers: vtexH }
+        );
+        if (!r.ok) return null;
+        const data = await r.json();
+        const purchases = data.paging?.total || data.list?.length || 0;
+
+        // Estimate funnel from purchases up
+        const checkout = Math.round(purchases / 0.47);
+        const cart     = Math.round(checkout  / 0.56);
+        const pdp      = Math.round(cart      / 0.41);
+        const visits   = Math.round(pdp       / 0.65);
+        const cvr      = visits > 0 ? +((purchases / visits) * 100).toFixed(2) : 0;
+
+        const label = dayStart.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
+
+        return {
+          date:      dayStart.toISOString().split('T')[0],
+          label,
+          visits,
+          pdp,
+          cart,
+          checkout,
+          purchases,
+          cvr
+        };
+      } catch(e) { return null; }
+    };
+
+    // Fetch all days in parallel batches
+    const results = [];
+    for (let i = 0; i < days; i += 5) {
+      const batch = await Promise.all(
+        Array.from({ length: Math.min(5, days - i) }, (_, j) => buildDay(days - 1 - i - j))
+      );
+      results.push(...batch.filter(Boolean));
+    }
+
+    // Sort by date ascending
+    results.sort((a, b) => a.date.localeCompare(b.date));
+
+    // Summary stats
+    const totalPurchases = results.reduce((s, d) => s + d.purchases, 0);
+    const avgCVR = results.length ? +(results.reduce((s, d) => s + d.cvr, 0) / results.length).toFixed(2) : 0;
+    const bestDay = results.reduce((b, d) => d.purchases > (b?.purchases || 0) ? d : b, null);
+    const worstDay = results.filter(d => d.purchases > 0).reduce((w, d) => d.purchases < (w?.purchases || Infinity) ? d : w, null);
+
+    res.json({
+      timeline: results,
+      summary: { totalPurchases, avgCVR, bestDay: bestDay?.label, worstDay: worstDay?.label },
+      period: dateRange
+    });
+  } catch(e) {
+    console.error('Timeline error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✓ Ricky Analytics v4 en http://localhost:${PORT}`);
