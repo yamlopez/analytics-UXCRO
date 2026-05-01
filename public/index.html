@@ -347,6 +347,46 @@ tr:hover td{background:rgba(255,255,255,0.012)}
 .sp-field-val{font-size:0.72rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sp-field-val.good{color:var(--good)}.sp-field-val.warn{color:var(--warn)}.sp-field-val.bad{color:var(--danger)}
 .sp-issues{display:flex;flex-wrap:wrap;gap:3px}
+.ux-insight-row{display:flex;align-items:flex-start;gap:0.75rem;padding:0.75rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:0.5rem;border-left:3px solid var(--border2)}
+.ux-insight-row.critical{border-left-color:var(--danger)}
+.ux-insight-row.high{border-left-color:var(--warn)}
+.ux-insight-row.medium{border-left-color:#66a8f5}
+.ux-insight-area{font-size:0.6rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);min-width:70px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.06em;padding-top:2px}
+.ux-insight-body{flex:1}
+.ux-insight-problem{font-size:0.78rem;font-weight:500;margin-bottom:3px;color:var(--text)}
+.ux-insight-impact{font-size:0.68rem;color:var(--warn);font-family:'IBM Plex Mono',monospace;margin-bottom:4px}
+.ux-insight-action{font-size:0.7rem;color:var(--text);padding:3px 7px;background:rgba(200,245,102,0.07);border-left:2px solid var(--accent);border-radius:0 3px 3px 0}
+.ux-insight-action::before{content:'→ ';color:var(--accent);font-weight:500}
+.dev-row{display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0;border-bottom:1px solid var(--border)}
+.dev-row:last-child{border-bottom:none}
+.dev-label{font-size:0.72rem;font-weight:500;min-width:80px}
+.dev-bar-wrap{flex:1}
+.dev-bar-bg{background:var(--bg3);border-radius:2px;height:16px;overflow:hidden}
+.dev-bar-fill{height:16px;border-radius:2px;display:flex;align-items:center;padding:0 6px;transition:width 0.6s}
+.dev-bar-val{font-size:0.62rem;font-family:'IBM Plex Mono',monospace;font-weight:500}
+.dev-meta{font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);min-width:80px;text-align:right}
+.perf-row{display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0;border-bottom:1px solid var(--border)}
+.perf-row:last-child{border-bottom:none}
+.perf-url{font-size:0.72rem;color:var(--muted2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.perf-ttfb{font-size:1rem;font-weight:300;font-family:'IBM Plex Mono',monospace}
+.perf-grade{font-size:0.62rem;font-family:'IBM Plex Mono',monospace;padding:2px 6px;border-radius:3px;margin-left:0.5rem}
+.perf-good{color:var(--good);background:rgba(200,245,102,0.1);border:1px solid rgba(200,245,102,0.2)}
+.perf-warn{color:var(--warn);background:rgba(245,200,102,0.1);border:1px solid rgba(245,200,102,0.2)}
+.perf-bad{color:var(--danger);background:rgba(245,102,102,0.1);border:1px solid rgba(245,102,102,0.2)}
+.sess-row{display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0.75rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:0.4rem;font-size:0.74rem}
+.sess-device{font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);min-width:55px}
+.sess-rage{color:var(--danger);font-family:'IBM Plex Mono',monospace;font-size:0.68rem;min-width:60px}
+.sess-dead{color:var(--warn);font-family:'IBM Plex Mono',monospace;font-size:0.68rem;min-width:60px}
+.sess-dur{color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.65rem;flex:1}
+.exp-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:0.5rem;display:flex;align-items:flex-start;gap:1rem}
+.exp-status{font-size:0.6rem;font-family:'IBM Plex Mono',monospace;padding:2px 8px;border-radius:3px;text-transform:uppercase;letter-spacing:0.06em;flex-shrink:0;margin-top:2px}
+.exp-running{background:rgba(102,168,245,0.12);color:#66a8f5;border:1px solid rgba(102,168,245,0.25)}
+.exp-won{background:rgba(200,245,102,0.12);color:var(--good);border:1px solid rgba(200,245,102,0.25)}
+.exp-lost{background:rgba(245,102,102,0.1);color:var(--danger);border:1px solid rgba(245,102,102,0.2)}
+.exp-hypothesis{background:rgba(150,150,150,0.1);color:var(--muted2);border:1px solid rgba(150,150,150,0.2)}
+.exp-hypo{font-size:0.78rem;font-weight:500;margin-bottom:0.25rem;flex:1}
+.exp-meta{font-size:0.65rem;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+.exp-lift{font-size:0.9rem;font-weight:300;font-family:'IBM Plex Mono',monospace}
 @media(max-width:900px){.sidebar{width:48px;min-width:48px}.logo p,.logo h1,.nav-item span:last-child,.nav-section,.sidebar-footer{display:none}.nav-item{padding:0.6rem;justify-content:center}.two-col{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -367,6 +407,7 @@ tr:hover td{background:rgba(255,255,255,0.012)}
   <div class="nav-item" onclick="switchTab('mobile',this)"><span>◐</span><span>Mobile Diagnostic</span></div>
   <div class="nav-item" onclick="switchTab('competitors',this)"><span>⊕</span><span>Competidores</span></div>
   <div class="nav-section">inteligencia</div>
+  <div class="nav-item" onclick="switchTab('uxlab',this)"><span>⚡</span><span>UX Lab</span></div>
   <div class="nav-item" onclick="switchTab('report',this)"><span>📋</span><span>Reporte Mensual</span></div>
   <div class="sidebar-footer"><p>VTEX API<br>Microsoft Clarity<br>Claude AI<br>© Ricky 2025</p></div>
 </nav>
@@ -513,6 +554,73 @@ tr:hover td{background:rgba(255,255,255,0.012)}
     <div class="chart-box" id="funnelChartBox" style="display:none">
       <div class="panel-title">usuarios por etapa</div>
       <canvas id="funnelChart" height="85"></canvas>
+    </div>
+
+    <!-- TIMELINE -->
+    <div class="chart-box" id="funnelTimelineBox" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem">
+        <div>
+          <div class="panel-title" style="margin-bottom:0.2rem;border-bottom:none;padding-bottom:0">línea de tiempo · eventos por día</div>
+          <div style="font-size:0.62rem;font-family:'IBM Plex Mono',monospace;color:var(--muted)">visitas → pdp → carrito → checkout → compra</div>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+          <select id="timelineRange" onchange="runTimeline()" style="font-size:0.68rem">
+            <option value="7">7 días</option>
+            <option value="14" selected>14 días</option>
+            <option value="30">30 días</option>
+          </select>
+          <!-- Toggle eventos -->
+          <div id="tlEventToggles" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+        </div>
+      </div>
+
+      <!-- Summary KPIs -->
+      <div id="tlSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.25rem">
+        <div class="stat-card"><div class="stat-label">total órdenes</div><div class="stat-val" id="tl1">—</div></div>
+        <div class="stat-card"><div class="stat-label">CVR promedio</div><div class="stat-val good" id="tl2">—</div></div>
+        <div class="stat-card"><div class="stat-label">mejor día</div><div class="stat-val" id="tl3" style="font-size:0.9rem">—</div></div>
+        <div class="stat-card"><div class="stat-label">día más bajo</div><div class="stat-val bad" id="tl4" style="font-size:0.9rem">—</div></div>
+      </div>
+
+      <!-- Chart -->
+      <div style="position:relative">
+        <canvas id="timelineChart" height="100"></canvas>
+      </div>
+
+      <!-- Log bar -->
+      <div class="log-bar" id="tlLogBar" style="margin-top:1rem;display:none">
+        <span class="pulse idle" id="tlDot"></span>
+        <span id="tlLog">cargando...</span>
+      </div>
+    </div>
+
+    <!-- FUNNEL TIMELINE -->
+    <div id="funnelTimelineWrap" style="display:none;margin-bottom:1.5rem">
+      <div class="chart-box" style="padding:0;overflow:hidden">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.5rem;border-bottom:1px solid var(--border)">
+          <div>
+            <div class="panel-title" style="margin-bottom:0;border-bottom:none;padding-bottom:0">línea de tiempo · eventos clave del funnel</div>
+            <div style="font-size:0.62rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:3px">órdenes · CVR · visitas estimadas · día a día</div>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <div id="tlMetricBtns" style="display:flex;border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden">
+              <button class="hm-mode-btn active" onclick="setTLMetric('orders',this)">Órdenes</button>
+              <button class="hm-mode-btn" onclick="setTLMetric('cvr',this)">CVR</button>
+              <button class="hm-mode-btn" onclick="setTLMetric('visits',this)">Visitas</button>
+              <button class="hm-mode-btn" onclick="setTLMetric('revenue',this)">Revenue</button>
+            </div>
+          </div>
+        </div>
+        <!-- Summary strip -->
+        <div id="tlSummaryStrip" style="display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg3);border-bottom:1px solid var(--border)"></div>
+        <!-- Chart -->
+        <div style="padding:1.25rem 1.5rem 0.75rem">
+          <canvas id="funnelTimelineChart" height="90"></canvas>
+        </div>
+        <!-- Events timeline bar -->
+        <div style="padding:0 1.5rem 1.25rem" id="tlEventsBar"></div>
+      </div>
     </div>
 
     <div id="funnelInsightsWrap" style="display:none;margin-top:1.25rem">
@@ -774,6 +882,124 @@ tr:hover td{background:rgba(255,255,255,0.012)}
 </div>
 
 
+<!-- UX LAB TAB -->
+<div id="tab-uxlab" class="tab-content">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">UX Lab</div>
+      <div class="topbar-sub">friction score · rage clicks · dead clicks · performance · session replays · CRO experiments</div>
+    </div>
+    <div class="topbar-actions">
+      <label>período</label>
+      <select id="uxlabRange"><option value="7">7 días</option><option value="14">14 días</option><option value="30">30 días</option></select>
+      <button class="btn primary" id="uxlabBtn" onclick="runUXLab()">⚡ analizar UX</button>
+    </div>
+  </div>
+  <div class="content" id="uxlabContent">
+
+    <!-- EMPTY STATE -->
+    <div id="uxlabEmpty" style="text-align:center;padding:5rem 2rem">
+      <div style="font-size:2rem;margin-bottom:0.75rem">⚡</div>
+      <div style="margin-bottom:0.5rem">presioná "analizar UX" para medir la fricción del sitio</div>
+      <div style="font-size:0.65rem;color:var(--muted)">friction score · rage/dead clicks · performance · session replays</div>
+    </div>
+
+    <!-- RESULTS (hidden until loaded) -->
+    <div id="uxlabResults" style="display:none">
+
+      <!-- ROW 1: Friction Score + Metrics -->
+      <div style="display:grid;grid-template-columns:200px 1fr;gap:1.5rem;margin-bottom:1.5rem;align-items:center">
+        <div class="panel" style="text-align:center;padding:1.5rem 1rem">
+          <div style="font-size:0.6rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem">UX Friction Score</div>
+          <svg width="110" height="110" viewBox="0 0 110 110" id="frictionGauge">
+            <circle cx="55" cy="55" r="45" fill="none" stroke="var(--bg3)" stroke-width="8"/>
+            <circle cx="55" cy="55" r="45" fill="none" stroke="var(--accent)" stroke-width="8"
+              stroke-dasharray="0 283" stroke-dashoffset="71" stroke-linecap="round"
+              transform="rotate(-90 55 55)" id="frictionArc" style="transition:stroke-dasharray 1s ease"/>
+            <text x="55" y="51" text-anchor="middle" fill="var(--accent)" font-family="IBM Plex Mono" font-size="20" font-weight="400" id="frictionNum">—</text>
+            <text x="55" y="66" text-anchor="middle" fill="var(--muted)" font-family="IBM Plex Mono" font-size="9">/100</text>
+          </svg>
+          <div id="frictionLabel" style="font-size:0.68rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-top:0.3rem">—</div>
+        </div>
+        <div class="stats-grid" style="margin-bottom:0">
+          <div class="stat-card"><div class="stat-label">⚡ rage clicks</div><div class="stat-val bad" id="ul1">—</div><div class="stat-delta" id="ul1s"></div></div>
+          <div class="stat-card"><div class="stat-label">💀 dead clicks</div><div class="stat-val warn" id="ul2">—</div></div>
+          <div class="stat-card"><div class="stat-label">↩ quick backs</div><div class="stat-val warn" id="ul3">—</div></div>
+          <div class="stat-card"><div class="stat-label">📜 scroll depth</div><div class="stat-val" id="ul4">—</div></div>
+        </div>
+      </div>
+
+      <!-- ROW 2: Mobile vs Desktop + Performance -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem">
+        <!-- Device comparison -->
+        <div class="panel">
+          <div class="panel-title">📱 mobile vs 🖥 desktop</div>
+          <div id="deviceComparison"></div>
+        </div>
+        <!-- Performance -->
+        <div class="panel">
+          <div class="panel-title">⚡ velocidad de carga · TTFB</div>
+          <div id="perfMetrics"></div>
+        </div>
+      </div>
+
+      <!-- ROW 3: AI Insights -->
+      <div id="uxInsightsWrap" style="display:none;margin-bottom:1.5rem">
+        <div class="intel-section-title">🧠 insights accionables · Claude AI</div>
+        <div id="uxInsightsList"></div>
+        <div id="uxSummary" style="margin-top:0.75rem;padding:0.9rem 1.1rem;background:rgba(200,245,102,0.05);border:1px solid rgba(200,245,102,0.15);border-radius:var(--radius);font-size:0.78rem;line-height:1.75"></div>
+      </div>
+
+      <!-- ROW 4: Session Replays -->
+      <div style="margin-bottom:1.5rem">
+        <div class="intel-section-title">🎬 session replays · filtros rápidos</div>
+        <div style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap">
+          <a id="replayRage" href="#" target="_blank" class="btn" style="text-decoration:none">⚡ ver sesiones con rage clicks</a>
+          <a id="replayDead" href="#" target="_blank" class="btn" style="text-decoration:none">💀 ver dead clicks</a>
+          <a id="replayAbandon" href="#" target="_blank" class="btn" style="text-decoration:none">↩ ver quick backs</a>
+        </div>
+        <div id="sessionsList"></div>
+      </div>
+
+      <!-- ROW 5: CRO Experiments -->
+      <div>
+        <div class="intel-section-title">🧪 CRO experiments · hipótesis A/B</div>
+        <div style="display:flex;gap:0.75rem;margin-bottom:1rem;align-items:center">
+          <button class="btn primary" onclick="showAddExperiment()">+ nueva hipótesis</button>
+          <span style="font-size:0.65rem;color:var(--muted);font-family:'IBM Plex Mono',monospace">registrá tests A/B y medí su impacto en conversión</span>
+        </div>
+        <div id="addExperimentForm" style="display:none;margin-bottom:1rem">
+          <div class="audit-form">
+            <div class="panel-title">nueva hipótesis</div>
+            <div class="form-grid">
+              <div class="form-field form-field-full"><label>hipótesis</label><input type="text" id="expHypo" placeholder="Si cambiamos X, el CVR aumentará porque Y..."></div>
+              <div class="form-field"><label>página</label><input type="text" id="expPage" placeholder="ej: PDP, Home, Checkout"></div>
+              <div class="form-field"><label>métrica a medir</label><input type="text" id="expMetric" placeholder="ej: Add to Cart rate, CVR"></div>
+              <div class="form-field"><label>CVR control (%)</label><input type="number" id="expControl" placeholder="ej: 2.3" step="0.1"></div>
+              <div class="form-field"><label>CVR variante (%)</label><input type="number" id="expVariant" placeholder="ej: 2.8" step="0.1"></div>
+              <div class="form-field"><label>estado</label>
+                <select id="expStatus">
+                  <option value="hypothesis">Hipótesis</option>
+                  <option value="running">En curso</option>
+                  <option value="won">Ganó</option>
+                  <option value="lost">Perdió</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top:0.75rem;display:flex;gap:0.5rem">
+              <button class="btn primary" onclick="saveExperiment()">guardar</button>
+              <button class="btn" onclick="document.getElementById('addExperimentForm').style.display='none'">cancelar</button>
+            </div>
+          </div>
+        </div>
+        <div id="experimentsList"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 <!-- MONTHLY REPORT TAB -->
 <div id="tab-report" class="tab-content">
   <div class="topbar">
@@ -1024,8 +1250,9 @@ async function runFunnel(){
         <div style="font-size:0.78rem;font-family:'IBM Plex Mono',monospace;color:var(--muted)">${data.comparePeriod}</div>
         <div style="font-size:0.82rem;font-family:'IBM Plex Mono',monospace;margin-top:2px">${data.compareConversionRate}% conv.</div>
       </div>`:''}
-      <div style="margin-top:1rem">
+      <div style="margin-top:1rem;display:flex;flex-direction:column;gap:0.5rem">
         <button class="btn" style="width:100%;font-size:0.65rem" onclick="runFunnelAI()">✦ analizar con IA</button>
+        <button class="btn" style="width:100%;font-size:0.65rem" id="tlBtn" onclick="runFunnelTimeline()">📈 línea de tiempo</button>
       </div>
       <div style="margin-top:0.5rem;font-size:0.58rem;color:var(--muted);font-family:'IBM Plex Mono',monospace">* revenue estimado con AOV medio del período</div>`;
 
@@ -1057,6 +1284,8 @@ async function runFunnel(){
 
     document.getElementById('funnelWrap').style.display='block';
     document.getElementById('funnelChartBox').style.display='block';
+    document.getElementById('funnelTimelineBox').style.display='block';
+    runTimeline();
 
     // IA Insights
     if(data.insights){
@@ -1694,6 +1923,337 @@ async function runTeardown(id){
 
 // Init competitors list on load
 renderCompetitorsList();
+
+// -- FUNNEL TIMELINE ----------------------------------------------------------
+let timelineChart = null;
+let tlVisible = { visits: true, pdp: true, cart: true, checkout: true, purchases: true };
+const TL_EVENTS = [
+  { key: 'visits',    label: 'Visitas',   color: '#c8f566' },
+  { key: 'pdp',       label: 'PDP',       color: '#66f5c8' },
+  { key: 'cart',      label: 'Carrito',   color: '#66a8f5' },
+  { key: 'checkout',  label: 'Checkout',  color: '#f5c866' },
+  { key: 'purchases', label: 'Compras',   color: '#f07a66' },
+];
+
+function buildToggleButtons(){
+  const wrap = document.getElementById('tlEventToggles');
+  if(!wrap) return;
+  wrap.innerHTML = TL_EVENTS.map(e => `
+    <button onclick="toggleTLEvent('${e.key}',this)"
+      style="font-family:'IBM Plex Mono',monospace;font-size:0.6rem;padding:3px 8px;border:1px solid ${e.color}40;background:${e.color}15;color:${e.color};cursor:pointer;border-radius:3px;transition:all 0.15s"
+      data-key="${e.key}" class="tl-btn-active"
+    >${e.label}</button>`).join('');
+}
+
+function toggleTLEvent(key, btn){
+  tlVisible[key] = !tlVisible[key];
+  btn.style.opacity = tlVisible[key] ? '1' : '0.35';
+  if(timelineChart){
+    const idx = TL_EVENTS.findIndex(e=>e.key===key);
+    if(idx>=0){
+      timelineChart.data.datasets[idx].hidden = !tlVisible[key];
+      timelineChart.update();
+    }
+  }
+}
+
+async function runTimeline(){
+  const days = document.getElementById('timelineRange')?.value || '14';
+  const logBar = document.getElementById('tlLogBar');
+  if(logBar){ logBar.style.display='flex'; log('tlDot','tlLog','cargando datos día a día desde VTEX...'); }
+
+  try {
+    const data = await post('/api/funnel-timeline', { dateRange: days });
+    if(data.error) throw new Error(data.error);
+    renderTimeline(data);
+    if(logBar) logBar.style.display='none';
+  } catch(e){
+    if(logBar){ log('tlDot','tlLog','error: '+e.message, false); }
+  }
+}
+
+function renderTimeline(data){
+  const tl = data.timeline || [];
+  if(!tl.length) return;
+
+  const s = data.summary || {};
+  document.getElementById('tl1').textContent = fmt(s.totalPurchases);
+  document.getElementById('tl2').textContent = s.avgCVR+'%';
+  document.getElementById('tl3').textContent = s.bestDay || '—';
+  document.getElementById('tl4').textContent = s.worstDay || '—';
+
+  buildToggleButtons();
+
+  const labels = tl.map(d => d.label);
+  const datasets = TL_EVENTS.map((e,i) => ({
+    label: e.label,
+    data: tl.map(d => d[e.key] || 0),
+    borderColor: e.color,
+    backgroundColor: e.color + '15',
+    borderWidth: i === 4 ? 2.5 : 1.5, // purchases thicker
+    pointRadius: i === 4 ? 4 : 2.5,
+    pointHoverRadius: 6,
+    pointBackgroundColor: e.color,
+    fill: false,
+    tension: 0.35,
+    hidden: !tlVisible[e.key],
+    yAxisID: i === 4 ? 'y2' : 'y1' // purchases on secondary axis
+  }));
+
+  if(timelineChart) timelineChart.destroy();
+  const ctx = document.getElementById('timelineChart').getContext('2d');
+  timelineChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: '#666', font: { family: 'IBM Plex Mono', size: 10 }, boxWidth: 12, padding: 16 }
+        },
+        tooltip: {
+          backgroundColor: '#141414',
+          borderColor: '#333',
+          borderWidth: 1,
+          titleFont: { family: 'IBM Plex Mono', size: 11 },
+          bodyFont: { family: 'IBM Plex Mono', size: 11 },
+          padding: 10,
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed.y;
+              const e = TL_EVENTS[ctx.datasetIndex];
+              return ` ${e.label}: ${v.toLocaleString('es-AR')}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#1a1a1a' },
+          ticks: { color: '#555', font: { family: 'IBM Plex Mono', size: 9 }, maxRotation: 45 }
+        },
+        y1: {
+          type: 'linear',
+          position: 'left',
+          grid: { color: '#1a1a1a' },
+          ticks: { color: '#555', font: { family: 'IBM Plex Mono', size: 9 }, callback: v => v.toLocaleString() }
+        },
+        y2: {
+          type: 'linear',
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: { color: '#f07a66', font: { family: 'IBM Plex Mono', size: 9 }, callback: v => v.toLocaleString() }
+        }
+      }
+    }
+  });
+}
+
+
+
+// -- UX LAB ------------------------------------------------------------------
+let experiments = JSON.parse(localStorage.getItem('ricky_experiments') || '[]');
+
+async function runUXLab(){
+  const btn = document.getElementById('uxlabBtn'); btn.disabled = true;
+  document.getElementById('uxlabEmpty').style.display = 'none';
+  document.getElementById('uxlabResults').style.display = 'none';
+
+  const period = document.getElementById('uxlabRange').value;
+
+  // Show shimmer
+  document.getElementById('uxlabResults').style.display = 'block';
+  document.getElementById('uxInsightsWrap').style.display = 'none';
+  ['ul1','ul2','ul3','ul4'].forEach(id => document.getElementById(id).textContent = '...');
+  document.getElementById('frictionNum').textContent = '...';
+  document.getElementById('deviceComparison').innerHTML = '<div class="shimmer"></div><div class="shimmer"></div><div class="shimmer"></div>';
+  document.getElementById('perfMetrics').innerHTML = '<div class="shimmer"></div><div class="shimmer"></div><div class="shimmer"></div>';
+  document.getElementById('sessionsList').innerHTML = '<div class="shimmer"></div><div class="shimmer"></div>';
+
+  try {
+    const data = await post('/api/ux-lab', { dateRange: period });
+    if(data.error) throw new Error(data.error);
+    renderUXLab(data);
+  } catch(e) {
+    document.getElementById('uxlabResults').style.display = 'none';
+    document.getElementById('uxlabEmpty').style.display = 'block';
+    document.getElementById('uxlabEmpty').innerHTML = '<div style="color:var(--danger);font-family:IBM Plex Mono,monospace;font-size:0.75rem">error: '+e.message+'</div>';
+  }
+  btn.disabled = false;
+}
+
+function renderUXLab(data){
+  const m = data.metrics;
+  const score = data.frictionScore;
+  const scoreColor = score>=75?'var(--good)':score>=50?'var(--warn)':'var(--danger)';
+  const arc = Math.round((score/100)*283);
+
+  // Gauge
+  document.getElementById('frictionNum').textContent = score;
+  document.getElementById('frictionNum').setAttribute('fill', scoreColor);
+  document.getElementById('frictionArc').style.stroke = scoreColor;
+  document.getElementById('frictionArc').setAttribute('stroke-dasharray', arc+' 283');
+  document.getElementById('frictionLabel').textContent = data.frictionLabel;
+  document.getElementById('frictionLabel').style.color = scoreColor;
+
+  // Metrics
+  document.getElementById('ul1').textContent = m.rageRate+'%';
+  document.getElementById('ul2').textContent = m.deadRate+'%';
+  document.getElementById('ul3').textContent = m.quickRate+'%';
+  document.getElementById('ul4').textContent = m.scrollDepth+'%';
+  document.getElementById('ul1s').innerHTML = `<span style="font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--muted)">${m.totalSess} sesiones · CVR ${m.cvr}%</span>`;
+
+  // Device comparison
+  const dev = data.device;
+  const maxSess = Math.max(dev.mobile.sessions, dev.desktop.sessions, 1);
+  document.getElementById('deviceComparison').innerHTML = `
+    <div class="dev-row">
+      <span class="dev-label">📱 Mobile</span>
+      <div class="dev-bar-wrap">
+        <div class="dev-bar-bg"><div class="dev-bar-fill" style="width:${Math.round(dev.mobile.sessions/maxSess*100)}%;background:#66a8f530">
+          <span class="dev-bar-val" style="color:#66a8f5">${dev.mobile.sessions} ses.</span>
+        </div></div>
+      </div>
+      <span class="dev-meta" style="color:${dev.mobile.rageRate>15?'var(--danger)':dev.mobile.rageRate>8?'var(--warn)':'var(--good)'}">⚡ ${dev.mobile.rageRate}% rage</span>
+    </div>
+    <div class="dev-row">
+      <span class="dev-label">🖥 Desktop</span>
+      <div class="dev-bar-wrap">
+        <div class="dev-bar-bg"><div class="dev-bar-fill" style="width:${Math.round(dev.desktop.sessions/maxSess*100)}%;background:#c8f56630">
+          <span class="dev-bar-val" style="color:var(--accent)">${dev.desktop.sessions} ses.</span>
+        </div></div>
+      </div>
+      <span class="dev-meta" style="color:${dev.desktop.rageRate>15?'var(--danger)':dev.desktop.rageRate>8?'var(--warn)':'var(--good)'}">⚡ ${dev.desktop.rageRate}% rage</span>
+    </div>
+    <div style="margin-top:0.75rem;font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--muted)">
+      Bounce rate: ${m.bounceRate}% · Duración promedio: ${m.avgDuration}s
+    </div>`;
+
+  // Performance
+  const perf = data.performance || [];
+  document.getElementById('perfMetrics').innerHTML = perf.map(p => {
+    const ttfb = p.ttfb;
+    const grade = ttfb < 400 ? 'good' : ttfb < 800 ? 'warn' : 'bad';
+    const gradeLabel = ttfb < 400 ? 'Rápido' : ttfb < 800 ? 'Mejorable' : 'Lento';
+    const shortUrl = p.url.replace('https://www.rickysarkany.com','') || '/';
+    return `<div class="perf-row">
+      <span class="perf-url">${shortUrl}</span>
+      <div style="display:flex;align-items:center">
+        <span class="perf-ttfb" style="color:${ttfb<400?'var(--good)':ttfb<800?'var(--warn)':'var(--danger)'}">${ttfb > 0 ? ttfb+'ms' : 'error'}</span>
+        <span class="perf-grade perf-${grade}">${gradeLabel}</span>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty">No se pudo medir</div>';
+
+  // AI Insights
+  if(data.insights) {
+    const ins = data.insights.insights || [];
+    const priColors = {critical:'var(--danger)',high:'var(--warn)',medium:'#66a8f5'};
+    document.getElementById('uxInsightsList').innerHTML = ins.map(i => `
+      <div class="ux-insight-row ${i.priority}">
+        <span class="ux-insight-area">${i.area}</span>
+        <div class="ux-insight-body">
+          <div class="ux-insight-problem">${i.problem}</div>
+          <div class="ux-insight-impact">💰 ${i.impact}</div>
+          <div class="ux-insight-action">${i.action}</div>
+        </div>
+        <span class="ai-badge ai-${i.priority==='critical'?'critical':i.priority==='high'?'high':'medium'}">${i.priority}</span>
+      </div>`).join('');
+    if(data.insights.summary) {
+      document.getElementById('uxSummary').textContent = data.insights.summary;
+    }
+    document.getElementById('uxInsightsWrap').style.display = 'block';
+  }
+
+  // Session replay links
+  const cf = data.clarityFilters || {};
+  if(cf.rage) document.getElementById('replayRage').href = cf.rage;
+  if(cf.dead) document.getElementById('replayDead').href = cf.dead;
+  if(cf.abandon) document.getElementById('replayAbandon').href = cf.abandon;
+
+  const sess = data.sessions || [];
+  if(sess.length) {
+    document.getElementById('sessionsList').innerHTML = `
+      <div style="font-size:0.62rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.08em">top sesiones con mayor fricción</div>
+      ${sess.filter(s=>s.id||s.url).slice(0,5).map(s=>`
+      <div class="sess-row">
+        <span class="sess-device">${s.device||'—'}</span>
+        <span class="sess-rage">⚡ ${s.rageClicks} rage</span>
+        <span class="sess-dead">💀 ${s.deadClicks} dead</span>
+        <span class="sess-dur">${s.duration}s · scroll ${s.scrollDepth}%</span>
+        ${s.url?`<a href="${s.url}" target="_blank" class="btn" style="font-size:0.6rem;padding:2px 8px;text-decoration:none">ver →</a>`:''}
+      </div>`).join('')}`;
+  } else {
+    document.getElementById('sessionsList').innerHTML = '<div style="font-size:0.72rem;color:var(--muted)">Usá los filtros de arriba para ver sesiones directamente en Clarity</div>';
+  }
+
+  // Render experiments
+  renderExperiments();
+}
+
+// CRO Experiments
+function showAddExperiment(){
+  document.getElementById('addExperimentForm').style.display='block';
+  document.getElementById('expHypo').focus();
+}
+
+function saveExperiment(){
+  const hypo = document.getElementById('expHypo').value.trim();
+  if(!hypo) return;
+  const ctrl = parseFloat(document.getElementById('expControl').value) || null;
+  const vari = parseFloat(document.getElementById('expVariant').value) || null;
+  const lift = ctrl && vari ? +((vari-ctrl)/ctrl*100).toFixed(1) : null;
+  experiments.unshift({
+    id: Date.now(),
+    hypothesis: hypo,
+    page: document.getElementById('expPage').value,
+    metric: document.getElementById('expMetric').value,
+    control: ctrl,
+    variant: vari,
+    lift,
+    status: document.getElementById('expStatus').value,
+    createdAt: new Date().toLocaleDateString('es-AR')
+  });
+  localStorage.setItem('ricky_experiments', JSON.stringify(experiments));
+  document.getElementById('addExperimentForm').style.display='none';
+  ['expHypo','expPage','expMetric','expControl','expVariant'].forEach(id=>document.getElementById(id).value='');
+  renderExperiments();
+}
+
+function deleteExperiment(id){
+  experiments = experiments.filter(e=>e.id!==id);
+  localStorage.setItem('ricky_experiments', JSON.stringify(experiments));
+  renderExperiments();
+}
+
+function renderExperiments(){
+  const el = document.getElementById('experimentsList');
+  if(!el) return;
+  if(!experiments.length){
+    el.innerHTML='<div class="panel" style="text-align:center;padding:1.5rem;color:var(--muted);font-family:IBM Plex Mono,monospace;font-size:0.72rem">ninguna hipótesis registrada · presioná "+ nueva hipótesis"</div>';
+    return;
+  }
+  const statusLabels = {hypothesis:'Hipótesis',running:'En curso',won:'Ganó',lost:'Perdió'};
+  el.innerHTML = experiments.map(e=>`
+    <div class="exp-card">
+      <span class="exp-status exp-${e.status}">${statusLabels[e.status]||e.status}</span>
+      <div style="flex:1;min-width:0">
+        <div class="exp-hypo">${e.hypothesis}</div>
+        <div class="exp-meta">${e.page||'—'} · ${e.metric||'—'} · ${e.createdAt}</div>
+        ${e.control&&e.variant?`<div style="display:flex;gap:1rem;margin-top:0.35rem;font-family:'IBM Plex Mono',monospace;font-size:0.7rem">
+          <span style="color:var(--muted)">Control: ${e.control}%</span>
+          <span style="color:var(--accent)">Variante: ${e.variant}%</span>
+          <span style="color:${e.lift>0?'var(--good)':'var(--danger)'}">Lift: ${e.lift>0?'+':''}${e.lift}%</span>
+        </div>`:''}
+      </div>
+      <button class="btn" style="font-size:0.6rem;padding:0.2rem 0.5rem;flex-shrink:0" onclick="deleteExperiment(${e.id})">✕</button>
+    </div>`).join('');
+}
+
+// Init experiments on load
+renderExperiments();
 
 // -- SEO MODE TOGGLE ---------------------------------------------------------
 let seoMode = 'products';
