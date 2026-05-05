@@ -407,6 +407,7 @@ tr:hover td{background:rgba(255,255,255,0.012)}
   <div class="nav-item" onclick="switchTab('mobile',this)"><span>◐</span><span>Mobile Diagnostic</span></div>
   <div class="nav-item" onclick="switchTab('competitors',this)"><span>⊕</span><span>Competidores</span></div>
   <div class="nav-section">inteligencia</div>
+  <div class="nav-item" onclick="switchTab('ga4',this)"><span>📊</span><span>GA4 Data</span></div>
   <div class="nav-item" onclick="switchTab('uxlab',this)"><span>⚡</span><span>UX Lab</span></div>
   <div class="nav-item" onclick="switchTab('report',this)"><span>📋</span><span>Reporte Mensual</span></div>
   <div class="sidebar-footer"><p>VTEX API<br>Microsoft Clarity<br>Claude AI<br>© Ricky 2025</p></div>
@@ -878,6 +879,96 @@ tr:hover td{background:rgba(255,255,255,0.012)}
     <!-- ANALYSIS RESULT -->
     <div class="log-bar"><span class="pulse idle" id="compDot"></span><span id="compLog">agregá competidores y presioná analizar en cualquiera de ellos</span></div>
     <div id="compResult"></div>
+  </div>
+</div>
+
+
+<!-- GA4 DATA TAB -->
+<div id="tab-ga4" class="tab-content">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">GA4 Data</div>
+      <div class="topbar-sub">Google Sheets · KPIs diarios · funnel · tráfico · dispositivos · insights IA</div>
+    </div>
+    <div class="topbar-actions">
+      <label>Sheet ID</label>
+      <input type="text" id="ga4SheetId" placeholder="pegar Sheet ID aquí" style="width:220px"
+        oninput="localStorage.setItem('ricky_sheet_id', this.value)">
+      <label>período</label>
+      <select id="ga4Range"><option value="7">7d</option><option value="30" selected>30d</option><option value="90">90d</option></select>
+      <button class="btn primary" id="ga4Btn" onclick="runGA4()">📊 cargar datos</button>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- SETUP GUIDE (shown when no sheet ID) -->
+    <div id="ga4Setup">
+      <div class="panel" style="margin-bottom:1.25rem;border-color:rgba(200,245,102,0.3)">
+        <div class="panel-title" style="color:var(--accent)">⚡ cómo conectar tu Google Sheet</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;margin-bottom:1rem">
+          <div style="background:var(--bg3);border-radius:var(--radius);padding:1rem">
+            <div style="font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--accent);margin-bottom:0.5rem">PASO 1</div>
+            <div style="font-size:0.78rem;font-weight:500;margin-bottom:0.3rem">Bajá el template</div>
+            <div style="font-size:0.7rem;color:var(--muted2);line-height:1.6">Descargá el archivo <strong>ricky_analytics_template.xlsx</strong> y subilo a Google Drive como Google Sheet</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--radius);padding:1rem">
+            <div style="font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--accent);margin-bottom:0.5rem">PASO 2</div>
+            <div style="font-size:0.78rem;font-weight:500;margin-bottom:0.3rem">Exportá de GA4</div>
+            <div style="font-size:0.7rem;color:var(--muted2);line-height:1.6">Exportá los informes de GA4 como CSV y pegá en cada pestaña del sheet siguiendo las instrucciones</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--radius);padding:1rem">
+            <div style="font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--accent);margin-bottom:0.5rem">PASO 3</div>
+            <div style="font-size:0.78rem;font-weight:500;margin-bottom:0.3rem">Publicá el sheet</div>
+            <div style="font-size:0.7rem;color:var(--muted2);line-height:1.6">Archivo → Compartir → Publicar en la web → Publicar. Luego copiá el ID de la URL</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--radius);padding:1rem">
+            <div style="font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--accent);margin-bottom:0.5rem">PASO 4</div>
+            <div style="font-size:0.78rem;font-weight:500;margin-bottom:0.3rem">Pegá el Sheet ID</div>
+            <div style="font-size:0.7rem;color:var(--muted2);line-height:1.6">Copiá el ID de la URL del sheet (el string largo entre /d/ y /edit) y pegalo arriba</div>
+          </div>
+        </div>
+        <div style="font-size:0.68rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);padding:0.5rem 0.75rem;background:rgba(255,255,255,0.03);border-radius:4px">
+          URL ejemplo: docs.google.com/spreadsheets/d/<span style="color:var(--accent)">1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms</span>/edit
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="ga4Results" style="display:none">
+      <!-- KPI Cards -->
+      <div class="stats-grid" style="margin-bottom:1.5rem">
+        <div class="stat-card"><div class="stat-label">sesiones GA4</div><div class="stat-val" id="g1">—</div></div>
+        <div class="stat-card"><div class="stat-label">usuarios</div><div class="stat-val" id="g2">—</div></div>
+        <div class="stat-card"><div class="stat-label">conversión</div><div class="stat-val good" id="g3">—</div></div>
+        <div class="stat-card"><div class="stat-label">revenue ARS</div><div class="stat-val" id="g4">—</div></div>
+      </div>
+      <div class="log-bar"><span class="pulse idle" id="g4Dot"></span><span id="g4Log">datos cargados desde Google Sheets</span></div>
+
+      <!-- Two col: Device + Channels -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem">
+        <div class="panel">
+          <div class="panel-title">📱 mobile vs 🖥 desktop · GA4</div>
+          <div id="ga4DeviceChart"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">📡 top canales de tráfico</div>
+          <div id="ga4ChannelsChart"></div>
+        </div>
+      </div>
+
+      <!-- Funnel timeline from GA4 -->
+      <div class="chart-box" style="margin-bottom:1.5rem">
+        <div class="panel-title">📈 funnel de eventos GA4 · día a día</div>
+        <canvas id="ga4FunnelChart" height="90"></canvas>
+      </div>
+
+      <!-- AI Insights from GA4 data -->
+      <div id="ga4InsightsWrap" style="display:none;margin-bottom:1.5rem">
+        <div class="intel-section-title">🧠 insights IA · basados en datos GA4</div>
+        <div id="ga4InsightsList"></div>
+        <div id="ga4Summary" style="margin-top:0.75rem;padding:0.9rem 1.1rem;background:rgba(200,245,102,0.05);border:1px solid rgba(200,245,102,0.15);border-radius:var(--radius);font-size:0.78rem;line-height:1.75"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1923,6 +2014,129 @@ async function runTeardown(id){
 
 // Init competitors list on load
 renderCompetitorsList();
+
+// -- GA4 SHEETS --------------------------------------------------------------
+// Restore saved sheet ID
+(function(){
+  const saved = localStorage.getItem('ricky_sheet_id');
+  const el = document.getElementById('ga4SheetId');
+  if(saved && el) el.value = saved;
+})();
+
+let ga4FunnelChart = null;
+
+async function runGA4(){
+  const sheetId = document.getElementById('ga4SheetId').value.trim();
+  if(!sheetId){ alert('Pegá el Sheet ID primero'); return; }
+  localStorage.setItem('ricky_sheet_id', sheetId);
+
+  const btn = document.getElementById('ga4Btn'); btn.disabled = true;
+  document.getElementById('ga4Setup').style.display = 'none';
+  document.getElementById('ga4Results').style.display = 'none';
+  log('g4Dot','g4Log','leyendo Google Sheet...');
+
+  const period = document.getElementById('ga4Range').value;
+
+  try {
+    const data = await post('/api/ga4-analysis', { sheetId, dateRange: period });
+    if(data.error) throw new Error(data.error);
+    renderGA4(data);
+    document.getElementById('ga4Results').style.display = 'block';
+    log('g4Dot','g4Log',`${data.rows.overview} días · ${data.rows.funnel} eventos · ${data.rows.trafico} registros de tráfico`,false);
+  } catch(e) {
+    document.getElementById('ga4Setup').style.display = 'block';
+    log('g4Dot','g4Log','error: '+e.message, false);
+  }
+  btn.disabled = false;
+}
+
+function renderGA4(data){
+  const s = data.summary;
+  document.getElementById('g1').textContent = fmt(s.totSessions);
+  document.getElementById('g2').textContent = fmt(s.totUsers);
+  document.getElementById('g3').textContent = s.avgCVR+'%';
+  document.getElementById('g3').className = 'stat-val '+(parseFloat(s.avgCVR)>=3?'good':parseFloat(s.avgCVR)>=1.5?'warn':'bad');
+  document.getElementById('g4').textContent = '$'+fmt(s.totRevenue);
+
+  // Device comparison
+  const dev = data.device;
+  const maxS = Math.max(dev.mobile.sessions, dev.desktop.sessions, 1);
+  document.getElementById('ga4DeviceChart').innerHTML = `
+    <div class="dev-row">
+      <span class="dev-label">📱 Mobile</span>
+      <div class="dev-bar-wrap"><div class="dev-bar-bg">
+        <div class="dev-bar-fill" style="width:${Math.round(dev.mobile.sessions/maxS*100)}%;background:#66a8f530">
+          <span class="dev-bar-val" style="color:#66a8f5">${fmt(dev.mobile.sessions)}</span>
+        </div>
+      </div></div>
+      <span class="dev-meta" style="color:${parseFloat(dev.mobile.cvr)<2?'var(--danger)':'var(--good)'}">CVR ${dev.mobile.cvr}%</span>
+    </div>
+    <div class="dev-row">
+      <span class="dev-label">🖥 Desktop</span>
+      <div class="dev-bar-wrap"><div class="dev-bar-bg">
+        <div class="dev-bar-fill" style="width:${Math.round(dev.desktop.sessions/maxS*100)}%;background:#c8f56630">
+          <span class="dev-bar-val" style="color:var(--accent)">${fmt(dev.desktop.sessions)}</span>
+        </div>
+      </div></div>
+      <span class="dev-meta" style="color:${parseFloat(dev.desktop.cvr)<3?'var(--warn)':'var(--good)'}">CVR ${dev.desktop.cvr}%</span>
+    </div>
+    <div style="margin-top:0.75rem;font-size:0.65rem;font-family:'IBM Plex Mono',monospace;color:var(--muted)">
+      Bounce promedio: ${s.avgBounce}% · Compras totales: ${fmt(s.totPurchase)}
+    </div>`;
+
+  // Top channels
+  const maxCh = data.topChannels[0]?.[1] || 1;
+  document.getElementById('ga4ChannelsChart').innerHTML = data.topChannels.map(([ch, sessions]) => `
+    <div class="source-row">
+      <span class="source-name">${ch}</span>
+      <div class="source-bar-bg"><div class="source-bar-fill" style="width:${Math.round(sessions/maxCh*100)}%"></div></div>
+      <span class="source-count">${fmt(sessions)} ses.</span>
+    </div>`).join('') || '<div class="empty">Sin datos de tráfico</div>';
+
+  // Funnel chart day by day
+  const fn = data.funnel || [];
+  if(fn.length && ga4FunnelChart !== null) { ga4FunnelChart.destroy(); ga4FunnelChart = null; }
+  if(fn.length){
+    const labels = fn.map(r => r.fecha || '');
+    const FC2 = ['#c8f566','#66f5c8','#66a8f5','#f5c866','#f07a66'];
+    const datasets = [
+      {label:'View Item',    data:fn.map(r=>r.view_item||0),    borderColor:FC2[0],backgroundColor:FC2[0]+'15',fill:false,tension:0.35,borderWidth:1.5,pointRadius:2},
+      {label:'Add to Cart',  data:fn.map(r=>r.add_to_cart||0),  borderColor:FC2[1],backgroundColor:FC2[1]+'15',fill:false,tension:0.35,borderWidth:1.5,pointRadius:2},
+      {label:'Checkout',     data:fn.map(r=>r.begin_checkout||0),borderColor:FC2[2],backgroundColor:FC2[2]+'15',fill:false,tension:0.35,borderWidth:1.5,pointRadius:2},
+      {label:'Purchase',     data:fn.map(r=>r.purchase||0),      borderColor:FC2[4],backgroundColor:FC2[4]+'15',fill:false,tension:0.35,borderWidth:2.5,pointRadius:3,yAxisID:'y2'},
+    ];
+    ga4FunnelChart = new Chart(document.getElementById('ga4FunnelChart').getContext('2d'),{
+      type:'line', data:{labels,datasets},
+      options:{
+        responsive:true,
+        interaction:{mode:'index',intersect:false},
+        plugins:{legend:{display:true,labels:{color:'#666',font:{family:'IBM Plex Mono',size:10},boxWidth:12}}},
+        scales:{
+          x:{grid:{color:'#1a1a1a'},ticks:{color:'#555',font:{family:'IBM Plex Mono',size:9},maxRotation:45}},
+          y1:{type:'linear',position:'left',grid:{color:'#1a1a1a'},ticks:{color:'#555',font:{family:'IBM Plex Mono',size:9},callback:v=>v.toLocaleString()}},
+          y2:{type:'linear',position:'right',grid:{drawOnChartArea:false},ticks:{color:'#f07a66',font:{family:'IBM Plex Mono',size:9},callback:v=>v.toLocaleString()}}
+        }
+      }
+    });
+  }
+
+  // AI Insights
+  if(data.insights){
+    const ins = data.insights.insights || [];
+    document.getElementById('ga4InsightsList').innerHTML = ins.map(i=>`
+      <div class="ux-insight-row ${i.priority}">
+        <span class="ux-insight-area">${i.area}</span>
+        <div class="ux-insight-body">
+          <div class="ux-insight-problem">${i.problem}</div>
+          <div class="ux-insight-impact">💰 ${i.impact}</div>
+          <div class="ux-insight-action">${i.action}</div>
+        </div>
+        <span class="ai-badge ai-${i.priority==='critical'?'critical':i.priority==='high'?'high':'medium'}">${i.priority}</span>
+      </div>`).join('');
+    if(data.insights.summary) document.getElementById('ga4Summary').textContent = data.insights.summary;
+    document.getElementById('ga4InsightsWrap').style.display = 'block';
+  }
+}
 
 // -- FUNNEL TIMELINE ----------------------------------------------------------
 let timelineChart = null;
