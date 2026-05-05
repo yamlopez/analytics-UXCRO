@@ -1040,6 +1040,148 @@ app.post('/api/funnel-timeline', async (req, res) => {
   }
 });
 
+
+// -- GA4 SHEETS: Lee Google Sheet público ------------------------------------
+app.post('/api/ga4-sheets', async (req, res) => {
+  const { sheetId, tab = 'overview', dateRange = '30' } = req.body;
+  if (!sheetId) return res.status(400).json({ error: 'Falta el Sheet ID' });
+
+  // Google Sheets CSV export URL (works for public sheets)
+  const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
+
+  try {
+    const r = await fetch(sheetUrl, {
+      headers: { 'Accept': 'text/csv' },
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!r.ok) throw new Error(`No se pudo leer el sheet (HTTP ${r.status}). Verificá que sea público.`);
+
+    const csv = await r.text();
+    // Parse CSV
+    const lines = csv.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+    const rows = lines.slice(1).map(line => {
+      // Handle quoted CSV values
+      const values = [];
+      let val = '', inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        if (line[i] === '"') { inQuotes = !inQuotes; continue; }
+        if (line[i] === ',' && !inQuotes) { values.push(val.trim()); val = ''; continue; }
+        val += line[i];
+      }
+      values.push(val.trim());
+      const obj = {};
+      headers.forEach((h, i) => {
+        const v = values[i] || '';
+        obj[h] = isNaN(v) || v === '' ? v : parseFloat(v);
+      });
+      return obj;
+    }).filter(r => r.fecha || r.date);
+
+    // Filter by dateRange if fecha column exists
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - parseInt(dateRange));
+    const filtered = rows.filter(r => {
+      if (!r.fecha) return true;
+      return new Date(r.fecha) >= cutoff;
+    });
+
+    res.json({ headers, rows: filtered, total: filtered.length, tab, sheetId });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GA4 full analysis: reads all 4 tabs and generates AI insights
+app.post('/api/ga4-analysis', async (req, res) => {
+  const { sheetId, dateRange = '30' } = req.body;
+  if (!sheetId) return res.status(400).json({ error: 'Falta el Sheet ID' });
+
+  const fetchTab = async (tab) => {
+    try {
+      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
+      const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) return [];
+      const csv = await r.text();
+      const lines = csv.trim().split('\n');
+      const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+      return lines.slice(1).map(line => {
+        const values = [];
+        let val = '', inQ = false;
+        for (let i = 0; i < line.length; i++) {
+          if (line[i] === '"') { inQ = !inQ; continue; }
+          if (line[i] === ',' && !inQ) { values.push(val.trim()); val = ''; continue; }
+          val += line[i];
+        }
+        values.push(val.trim());
+        const obj = {};
+        headers.forEach((h, i) => { const v = values[i]||''; obj[h] = isNaN(v)||v==='' ? v : parseFloat(v); });
+        return obj;
+      }).filter(r => r.fecha || r.date);
+    } catch { return []; }
+  };
+
+  const [overview, funnel, trafico, dispositivos] = await Promise.all([
+    fetchTab('overview'), fetchTab('funnel'), fetchTab('trafico'), fetchTab('dispositivos')
+  ]);
+
+  // Compute summaries
+  const sum = (arr, key) => arr.reduce((s,r) => s + (r[key]||0), 0);
+  const avg = (arr, key) => arr.length ? sum(arr,key)/arr.length : 0;
+
+  const totSessions = sum(overview, 'sesiones');
+  const totUsers    = sum(overview, 'usuarios');
+  const avgBounce   = avg(overview, 'bounce_rate').toFixed(1);
+  const totPurchase = sum(funnel, 'purchase');
+  const totRevenue  = sum(funnel, 'revenue_ars');
+  const avgCVR      = funnel.length ? (sum(funnel,'purchase')/sum(funnel,'view_item')*100).toFixed(2) : 0;
+
+  // Top channels
+  const channelMap = {};
+  trafico.forEach(r => {
+    if(!r.canal) return;
+    channelMap[r.canal] = (channelMap[r.canal]||0) + (r.sesiones||0);
+  });
+  const topChannels = Object.entries(channelMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  // Device split
+  const mobRows  = dispositivos.filter(r => (r.dispositivo||'').toLowerCase()==='mobile');
+  const deskRows = dispositivos.filter(r => (r.dispositivo||'').toLowerCase()==='desktop');
+  const mobSess  = sum(mobRows,'sesiones'), deskSess = sum(deskRows,'sesiones');
+  const mobCVR   = mobRows.length&&mobSess>0 ? (sum(mobRows,'conversiones')/mobSess*100).toFixed(2) : 0;
+  const deskCVR  = deskRows.length&&deskSess>0 ? (sum(deskRows,'conversiones')/deskSess*100).toFixed(2) : 0;
+
+  // AI insights
+  const ctx = `GA4 DATA (últimos ${dateRange} días):
+Sesiones: ${totSessions.toLocaleString()} | Usuarios: ${totUsers.toLocaleString()} | Bounce: ${avgBounce}%
+Compras: ${totPurchase} | Revenue: $${totRevenue.toLocaleString()} ARS | CVR: ${avgCVR}%
+Mobile: ${mobSess} ses. (CVR ${mobCVR}%) | Desktop: ${deskSess} ses. (CVR ${deskCVR}%)
+Top canales: ${topChannels.map(([k,v])=>k+': '+v).join(', ')}`;
+
+  let insights = null;
+  try {
+    const raw = await callClaude(
+      [{role:'user', content: ctx + '\n\nGenera 4 insights accionables en JSON. {"insights":[{"priority":"critical|high|medium","area":"string","problem":"string","impact":"string","action":"string"}],"summary":"2 oraciones"}'}],
+      'CRO analyst. ONLY valid JSON starting with {.',
+      600
+    );
+    const si=raw.indexOf('{'), ei=raw.lastIndexOf('}');
+    if(si!==-1&&ei>si) insights=JSON.parse(raw.slice(si,ei+1));
+  } catch{}
+
+  res.json({
+    summary: { totSessions, totUsers, totPurchase, totRevenue, avgCVR, avgBounce },
+    funnel: funnel.slice(-30),
+    overview: overview.slice(-30),
+    trafico: trafico.slice(-60),
+    dispositivos: dispositivos.slice(-60),
+    topChannels,
+    device: { mobile: { sessions: mobSess, cvr: mobCVR }, desktop: { sessions: deskSess, cvr: deskCVR } },
+    insights,
+    rows: { overview: overview.length, funnel: funnel.length, trafico: trafico.length, dispositivos: dispositivos.length }
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✓ Ricky Analytics v4 en http://localhost:${PORT}`);
